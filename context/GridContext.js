@@ -286,7 +286,37 @@ export const GridProvider = ({ children }) => {
     if (month >= 360) {
       setIsPlaying(false);
       setGameStatus('ended');
-      setMonth(361); // <-- This triggers the full-screen win/loss overlay!
+      
+      // --- START TELEMETRY: Calculate final win status and clean capacity ---
+      const finalTarget = getCarbonTarget(360);
+      const isCarbonMet = intensity <= finalTarget; // Using the intensity we calculated earlier
+      const isWin = isCarbonMet && reliabilityIdx >= 95;
+      const finalCleanCapacity = fleet.solar + fleet.wind + fleet.storage + fleet.nuclear;
+
+      const payload = {
+        win_status: isWin,
+        final_cash: prevCash + finalCashFlow, // Grabbing the absolute final cash amount
+        blackout_count: blackoutCount,
+        retail_rate: retailRate,
+        clean_capacity: finalCleanCapacity
+      };
+
+      // Fire the data silently to Supabase
+      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/game_results`, {
+          method: 'POST',
+          headers: {
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(payload)
+        }).catch(err => console.error("Telemetry error:", err));
+      }
+      // --- END TELEMETRY ---
+
+      setMonth(361); 
       return; 
     }
 
