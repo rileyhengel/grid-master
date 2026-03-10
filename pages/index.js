@@ -21,7 +21,7 @@ export default function Dashboard() {
   // We grab the official target for the final month (which should be 0.00)
   const finalTarget = getCarbonTarget(360); 
   // If you hit 0.00, it is now successfully recognized!
-  const isCarbonMet = currentIntensity <= finalTarget; 
+  const isCarbonMet = Number(currentIntensity.toFixed(2)) <= Number(finalTarget.toFixed(2));
 
   // 2. Granular Failure States
   if (cash < 0) {
@@ -82,7 +82,7 @@ export default function Dashboard() {
       </div>
     );
 
-    if (isCarbonMet && reliabilityIdx >= 95) {
+    if (isCarbonMet && blackoutCount <= 12) {
       return (
         <div className="bg-gray-950 min-h-screen text-green-500 flex flex-col items-center justify-center font-mono p-10 text-center">
           <h1 className="text-5xl font-bold tracking-tighter mb-2">SIMULATION COMPLETE: VICTORY</h1>
