@@ -295,7 +295,7 @@ export const GridProvider = ({ children }) => {
 
       const payload = {
         win_status: isWin,
-        final_cash: prevCash + finalCashFlow, // Grabbing the absolute final cash amount
+        final_cash: Math.round(cash),
         blackout_count: blackoutCount,
         retail_rate: retailRate,
         clean_capacity: finalCleanCapacity
