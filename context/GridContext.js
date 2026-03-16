@@ -283,14 +283,16 @@ export const GridProvider = ({ children }) => {
 
     setConsecutiveGoodMonths(nextStreak);
 
-    if (month >= 360) {
+// --- START TELEMETRY: Unified Game Over Check ---
+// This catches players who reach Year 30, AND players who crash the grid early.
+    if (month >= 360 || cash < 0 || compositeApproval < 15) {
       setIsPlaying(false);
       setGameStatus('ended');
       
-      // --- START TELEMETRY: Calculate final win status and clean capacity ---
-      const finalTarget = getCarbonTarget(360);
-      const isCarbonMet = intensity <= finalTarget; // Using the intensity we calculated earlier
-      const isWin = isCarbonMet && reliabilityIdx >= 95;
+      const finalTarget = getCarbonTarget(month);
+      
+      // It's a win ONLY if they survived all 360 months, met carbon, and kept lights on
+      const isWin = (month >= 360) && (currentIntensity <= finalTarget) && (blackoutCount <= 12);
       const finalCleanCapacity = fleet.solar + fleet.wind + fleet.storage + fleet.nuclear;
 
       const payload = {
@@ -298,25 +300,31 @@ export const GridProvider = ({ children }) => {
         final_cash: Math.round(cash),
         blackout_count: blackoutCount,
         retail_rate: retailRate,
-        clean_capacity: finalCleanCapacity
+        clean_capacity: finalCleanCapacity,
+        end_month: month, // NEW: Tracks exactly when they failed/won
+        final_carbon_intensity: Number(currentIntensity.toFixed(2)) // NEW: Tracks their final emissions
       };
 
-      // Fire the data silently to Supabase
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/game_results`, {
-          method: 'POST',
-          headers: {
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
-          },
-          body: JSON.stringify(payload)
-        }).catch(err => console.error("Telemetry error:", err));
-      }
+      const cleanUrl = process.env.NEXT_PUBLIC_SUPABASE_URL.trim();
+
+      fetch(`${cleanUrl}/rest/v1/game_results`, {
+        method: 'POST',
+        headers: {
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(response => {
+         if (!response.ok) console.error("Supabase Rejected:", response.status);
+         else console.log("Telemetry Sent Successfully!");
+      })
+      .catch(err => console.error("Telemetry fetch error:", err));
       // --- END TELEMETRY ---
 
-      setMonth(361); 
+      setMonth(361); // Trigger the end screens in your UI
       return; 
     }
 
