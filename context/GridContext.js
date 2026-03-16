@@ -283,51 +283,8 @@ export const GridProvider = ({ children }) => {
 
     setConsecutiveGoodMonths(nextStreak);
 
-// --- START TELEMETRY: Unified Game Over Check ---
-// This catches players who reach Year 30, AND players who crash the grid early.
-    if (month >= 360 || cash < 0 || compositeApproval < 15) {
-      setIsPlaying(false);
-      setGameStatus('ended');
-      
-      const finalTarget = getCarbonTarget(month);
-      
-      // It's a win ONLY if they survived all 360 months, met carbon, and kept lights on
-      const isWin = (month >= 360) && (currentIntensity <= finalTarget) && (blackoutCount <= 12);
-      const finalCleanCapacity = fleet.solar + fleet.wind + fleet.storage + fleet.nuclear;
-
-      const payload = {
-        win_status: isWin,
-        final_cash: Math.round(cash),
-        blackout_count: blackoutCount,
-        retail_rate: retailRate,
-        clean_capacity: finalCleanCapacity,
-        end_month: month, // NEW: Tracks exactly when they failed/won
-        final_carbon_intensity: Number(currentIntensity.toFixed(2)) // NEW: Tracks their final emissions
-      };
-
-      const cleanUrl = process.env.NEXT_PUBLIC_SUPABASE_URL.trim();
-
-      fetch(`${cleanUrl}/rest/v1/game_results`, {
-        method: 'POST',
-        headers: {
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify(payload)
-      })
-      .then(response => {
-         if (!response.ok) console.error("Supabase Rejected:", response.status);
-         else console.log("Telemetry Sent Successfully!");
-      })
-      .catch(err => console.error("Telemetry fetch error:", err));
-      // --- END TELEMETRY ---
-
-      setMonth(361); // Trigger the end screens in your UI
-      return; 
-    }
-
+    // FIX: The buggy telemetry block that was trapped here has been completely removed.
+    
     setEventLog(prev => [{ m: month + 1, text: currentLog }, ...prev]);
     setLastRetailRate(retailRate); 
     setMonth(prev => prev + 1);
@@ -340,14 +297,60 @@ export const GridProvider = ({ children }) => {
     return baselineIntensity * reductionFactor;
   };
 
-  // NEW: Expose weather to the UI chart
   const [weatherModifiers, setWeatherModifiers] = useState({ solar: 1.0, wind: 1.0 });
+
+  // --- AUTOMATED TELEMETRY WATCHER ---
+  useEffect(() => {
+    // Abort if game is not active or has already triggered the end state
+    if (gameStatus === 'start_screen' || gameStatus === 'tutorial' || gameStatus === 'ended') return;
+
+    // Trigger on any of the three failure/success states
+    if (month > 360 || cash < 0 || compositeApproval < 15) {
+      setIsPlaying(false);
+      setGameStatus('ended');
+
+      const finalTarget = getCarbonTarget(month);
+      const isWin = (month > 360) && (currentIntensity <= finalTarget) && (blackoutCount <= 12);
+      const finalCleanCapacity = fleet.solar + fleet.wind + fleet.storage + fleet.nuclear;
+
+      const payload = {
+        win_status: isWin,
+        final_cash: Math.round(cash),
+        blackout_count: blackoutCount,
+        retail_rate: retailRate,
+        clean_capacity: finalCleanCapacity,
+        end_month: month > 360 ? 360 : month,
+        final_carbon_intensity: Number(currentIntensity.toFixed(2))
+      };
+
+      const cleanUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ? process.env.NEXT_PUBLIC_SUPABASE_URL.trim() : "";
+
+      if (cleanUrl && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        fetch(`${cleanUrl}/rest/v1/game_results`, {
+          method: 'POST',
+          headers: {
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(response => {
+           if (!response.ok) console.error("Supabase Rejected:", response.status);
+           else console.log("Telemetry Sent Successfully!");
+        })
+        .catch(err => console.error("Telemetry fetch error:", err));
+      }
+    }
+  }, [month, cash, compositeApproval, gameStatus, currentIntensity, blackoutCount, fleet, retailRate]); 
+  // -----------------------------------
+
 
   // --- MODULE 2: SPATIAL CONSTRAINTS & LAND USE ---
   const totalLand = 5000; 
   const landUsage = { nuclear: 1, gas: 1, coal: 1.5, storage: 0.1, solar: 7, wind: 40 };
 
-  // FIX: Land is now reserved the moment CapEx is approved (in the queue)
   const fleetLand = (fleet.nuclear * landUsage.nuclear) + (fleet.gas * landUsage.gas) + (fleet.coal * landUsage.coal) + 
                     (fleet.storage * landUsage.storage) + (fleet.solar * landUsage.solar) + (fleet.wind * landUsage.wind);
   
