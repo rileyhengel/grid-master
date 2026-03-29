@@ -12,14 +12,14 @@ export default function OperationsManual({ isOpen, onClose }) {
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-950 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-bold tracking-widest text-green-400 uppercase">Grid Master Codex</h2>
-            <p className="text-xs text-gray-500 tracking-widest uppercase mt-1">Authorized Personnel Only // Operations & Ethics Manual</p>
+            <h2 className="text-2xl font-bold tracking-widest text-green-400 uppercase">Operations Manual</h2>
+            <p className="text-xs text-gray-500 tracking-widest uppercase mt-1">Field Guide // How to not get fired</p>
           </div>
           <button 
             onClick={onClose}
             className="text-gray-400 hover:text-white hover:bg-red-900/50 px-4 py-2 border border-gray-700 hover:border-red-500 transition-colors uppercase text-sm font-bold tracking-widest"
           >
-            Close Terminal
+            Close Manual
           </button>
         </div>
 
@@ -32,25 +32,25 @@ export default function OperationsManual({ isOpen, onClose }) {
               onClick={() => setActiveTab('mechanical')}
               className={`text-left px-4 py-3 text-sm tracking-widest uppercase transition-colors ${activeTab === 'mechanical' ? 'bg-blue-900/40 text-blue-400 border-l-2 border-blue-500 font-bold' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'}`}
             >
-              1. Mechanical Systems
+              1. Power Plants
             </button>
             <button 
               onClick={() => setActiveTab('finance')}
               className={`text-left px-4 py-3 text-sm tracking-widest uppercase transition-colors ${activeTab === 'finance' ? 'bg-purple-900/40 text-purple-400 border-l-2 border-purple-500 font-bold' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'}`}
             >
-              2. Corporate Finance
+              2. City Finance
             </button>
             <button 
               onClick={() => setActiveTab('urban')}
               className={`text-left px-4 py-3 text-sm tracking-widest uppercase transition-colors ${activeTab === 'urban' ? 'bg-orange-900/40 text-orange-400 border-l-2 border-orange-500 font-bold' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'}`}
             >
-              3. Urban Planning
+              3. Land & Space
             </button>
             <button 
               onClick={() => setActiveTab('ethics')}
               className={`text-left px-4 py-3 text-sm tracking-widest uppercase transition-colors ${activeTab === 'ethics' ? 'bg-green-900/40 text-green-400 border-l-2 border-green-500 font-bold' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-900'}`}
             >
-              4. Public Ethics
+              4. Public Approval
             </button>
           </div>
 
@@ -59,31 +59,23 @@ export default function OperationsManual({ isOpen, onClose }) {
             
             {activeTab === 'mechanical' && (
               <div className="space-y-6 animate-fadeIn">
-                <h3 className="text-xl font-bold text-blue-400 mb-4 border-b border-blue-900 pb-2 uppercase tracking-widest">Mechanical Systems & Control Logic</h3>
-                <p>The grid is the largest and most complex machine ever built. To balance supply and demand in real-time, operators must understand the thermodynamics and automated control loops that govern their assets.</p>
+                <h3 className="text-xl font-bold text-blue-400 mb-4 border-b border-blue-900 pb-2 uppercase tracking-widest">Power Plants & Grid Physics</h3>
+                <p>The grid is a giant balancing act. You have to match your power supply to the city's demand every single hour of the day.</p>
                 
                 <div className="space-y-4">
                   <div className="bg-gray-950 p-4 border border-gray-800">
-                    <h4 className="font-bold text-white mb-2 uppercase">The Thermodynamics of Dispatch</h4>
-                    <p>Thermal plants are bound by the laws of physics. Baseload assets (like Nuclear and Coal) rely on massive steam cycles that take days to reach operational temperatures; they must run constantly to avoid thermal stress fractures. Conversely, Gas Peakers utilize aeroderivative combustion turbines (essentially stationary jet engines). They can spin up in minutes to catch evening demand spikes, but this mechanical agility comes at a brutal loss of fuel efficiency.</p>
+                    <h4 className="font-bold text-white mb-2 uppercase">The Heavy Lifters vs. The Peakers</h4>
+                    <p>Heavy plants (like Nuclear and Coal) take a long time to build, but they provide massive, steady power around the clock. Backup plants (like Gas Peakers) can turn on instantly to catch sudden demand spikes, but their fuel is incredibly expensive. Relying entirely on Gas to run your city will quickly bankrupt you.</p>
                   </div>
 
                   <div className="bg-gray-950 p-4 border border-gray-800">
-                    <h4 className="font-bold text-white mb-2 uppercase">The Intermittency Problem</h4>
-                    <p className="mb-2">Renewable generation is fundamentally hostage to weather RNG. Wind output does not scale linearly; it scales with the cube of wind velocity, governed by the formula:</p>
-                    <div className="text-center text-blue-300 font-bold my-4 bg-gray-900 py-3 rounded-sm font-serif text-lg tracking-wider">
-                      P<sub className="text-[10px] ml-[1px]">wind</sub> = &frac12; &rho; A v<sup className="text-[10px]">3</sup> &middot; C<sub className="text-[10px]">p</sub>
-                    </div>
-                    <p>Because velocity is cubed, even a slight drop in the daily wind sine wave causes a massive crash in Megawatt output. Similarly, heavy cloud cover introduces a random variable that can instantly slash solar irradiance by 20%, requiring immediate automated dispatch corrections.</p>
+                    <h4 className="font-bold text-white mb-2 uppercase">The Weather Problem</h4>
+                    <p>Wind and Solar power are cheap and clean, but they are entirely at the mercy of the weather. A cloudy day or a sudden drop in the wind will instantly slash your power generation. You must always have backup plants or batteries ready to catch the grid when the weather turns bad.</p>
                   </div>
 
                   <div className="bg-gray-950 p-4 border border-gray-800">
-                    <h4 className="font-bold text-white mb-2 uppercase">Storage Control Loops</h4>
-                    <p className="mb-2">Your lithium-ion fleet operates on a strict, automated 2-pass logic loop. In Pass 1, if generation exceeds demand, the system charges the batteries. In Pass 2, if generation falls below demand, it discharges them strictly to prevent a blackout. Players must account for the 4-hour capacity limit and the inherent thermodynamic penalty of round-trip efficiency ({`$\\eta_{RT}=0.85$`}), meaning:</p>
-                    <div className="text-center text-green-300 font-bold my-4 bg-gray-900 py-3 rounded-sm font-serif text-lg tracking-wider">
-                      E<sub className="text-[10px] ml-[1px]">out</sub> = E<sub className="text-[10px] ml-[1px]">in</sub> &times; 0.85
-                    </div>
-                    <p>Every time you cycle a battery, 15% of that energy is lost to heat.</p>
+                    <h4 className="font-bold text-white mb-2 uppercase">How Batteries Work</h4>
+                    <p>Your battery fleet is fully automated. When your wind and solar panels generate more power than the city needs, the batteries charge up. When demand spikes in the evening, the batteries discharge to keep the lights on. However, batteries aren't perfect: every time you charge and drain them, you lose about 15% of that power to heat.</p>
                   </div>
                 </div>
               </div>
@@ -91,21 +83,21 @@ export default function OperationsManual({ isOpen, onClose }) {
 
             {activeTab === 'finance' && (
               <div className="space-y-6 animate-fadeIn">
-                <h3 className="text-xl font-bold text-purple-400 mb-4 border-b border-purple-900 pb-2 uppercase tracking-widest">Utility Corporate Finance</h3>
-                <p>Building a Net Zero grid is not just an engineering challenge; it is a brutal test of corporate finance. Every megawatt of capacity requires staggering capital, and poor financial structuring will end your tenure before the physics do.</p>
+                <h3 className="text-xl font-bold text-purple-400 mb-4 border-b border-purple-900 pb-2 uppercase tracking-widest">Managing the Budget</h3>
+                <p>Building a clean grid costs billions. If you mismanage the city's money, the banks will cut you off and you will lose the game.</p>
                 
                 <ul className="space-y-4">
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">CapEx vs. OpEx</strong>
-                    This is the core financial trap of the game. Renewables demand massive upfront Capital Expenditures (CapEx) but have near-zero Operational Expenditures (OpEx). Fossil fuels look dangerously appealing because they are cheap to build, but their daily OpEx (fuel burn and maintenance) will slowly bleed your treasury dry.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">Building vs. Running Costs</strong>
+                    Clean energy (Solar/Wind/Nuclear) costs a fortune to build upfront, but is virtually free to run every day. Fossil fuels (Coal/Gas) are dangerously tempting because they are cheap to build, but buying fuel for them every single month will slowly bleed your budget dry.
                   </li>
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">The Bond Market Death Spiral</strong>
-                    To fund billion-dollar infrastructure, you must issue Municipal Bonds. Every $100M borrowed locks your utility into a relentless 10-year debt service. If your net cash flow drops—due to overbuilding or operational waste—Wall Street will downgrade your credit rating from AAA down to JUNK. Once downgraded, the risk premiums on future debt become violently expensive, trapping you in a fatal debt spiral.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">The Debt Trap</strong>
+                    To afford clean energy, you will need to take out Municipal Bonds (loans). Every loan requires a monthly interest payment. If you borrow too much and your cash reserves drop too low, Wall Street will downgrade your credit rating to JUNK. Once that happens, new loans become so expensive that you will be trapped in debt forever.
                   </li>
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">The Value of Lost Load (VOLL)</strong>
-                    A blackout is not just an inconvenience; it is a financial catastrophe. The state regulator will fine your utility $1,000 for every single unserved Megawatt-hour. Failing to meet peak demand will bankrupt a poorly managed grid overnight.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">The Cost of Blackouts</strong>
+                    Blackouts aren't just bad for PR; they are financially devastating. The government will fine you $1,000 for every megawatt-hour of power you fail to deliver during a blackout. A single bad month can wipe out your treasury.
                   </li>
                 </ul>
               </div>
@@ -113,21 +105,21 @@ export default function OperationsManual({ isOpen, onClose }) {
 
             {activeTab === 'urban' && (
               <div className="space-y-6 animate-fadeIn">
-                <h3 className="text-xl font-bold text-orange-400 mb-4 border-b border-orange-900 pb-2 uppercase tracking-widest">Urban Planning & Spatial Constraints</h3>
-                <p>The grid does not exist in a mathematical vacuum; it occupies physical space. You must navigate the geometric realities of land use and the political friction of zoning.</p>
+                <h3 className="text-xl font-bold text-orange-400 mb-4 border-b border-orange-900 pb-2 uppercase tracking-widest">City Land & Protests</h3>
+                <p>Power plants take up physical space, and you only have so much land available inside the city limits.</p>
                 
                 <ul className="space-y-4">
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">Land Use Geometry</strong>
-                    Energy density dictates your spatial strategy. Nuclear power is incredibly dense, requiring roughly 1 acre/MW. Renewables, however, are sprawling and diffuse; Solar requires ~7 acres/MW, and Onshore Wind demands up to 40 acres/MW of territorial footprint.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">Running Out of Space</strong>
+                    Nuclear and Gas plants are incredibly compact. Renewables are sprawling. Solar farms require 7 times more land than Nuclear, and Wind farms require 40 times more land. You only have 5,000 acres of local land to build on.
                   </li>
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">The T&D Sprawl Penalty</strong>
-                    Your local municipal zone only contains 5,000 acres of buildable land. Once you consume this geometry, you are forced to build far outside city limits. This triggers immediate, multimillion-dollar interconnection fees and permanently inflates your monthly Transmission & Distribution (T&D) maintenance costs due to line losses over distance.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">The Long-Distance Penalty</strong>
+                    Once you use up your 5,000 acres of city land, you are forced to build your new wind and solar farms far out in the countryside. This triggers an immediate, multi-million dollar penalty fee to build long-distance transmission wires to connect them back to the city.
                   </li>
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">NIMBY Backlash</strong>
-                    Siting heavily polluting assets inside the local municipal zone triggers immediate community backlash. Citizens demand reliable power, but dropping a gas peaker in their backyard will destroy your public approval ratings and invite crippling regulatory scrutiny.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">Local Protests</strong>
+                    Citizens want the lights on, but nobody wants a dirty power plant in their backyard. If you build new Coal or Gas plants inside the city limits, it will trigger immediate protests and severely damage your Public Approval.
                   </li>
                 </ul>
               </div>
@@ -135,21 +127,21 @@ export default function OperationsManual({ isOpen, onClose }) {
 
             {activeTab === 'ethics' && (
               <div className="space-y-6 animate-fadeIn">
-                <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2 uppercase tracking-widest">The Ethics of Public Power</h3>
-                <p>A utility operator does not just balance a spreadsheet; they manage the lifeblood of a modern polis. The Tripartite Index (Affordability, Reliability, Environment) forces you to navigate deep ethical obligations regarding social equity and justice.</p>
+                <h3 className="text-xl font-bold text-green-400 mb-4 border-b border-green-900 pb-2 uppercase tracking-widest">Keeping Your Job</h3>
+                <p>As the Grid Master, you serve the public. You have to balance three conflicting goals. If your overall Approval Rating drops below 15%, the Mayor will fire you and the game ends.</p>
                 
                 <ul className="space-y-4">
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">The Affordability Mandate</strong>
-                    Energy is a fundamental prerequisite for equal opportunity. Jacking up the retail rate to aggressively fund green infrastructure acts as a deeply regressive tax, disproportionately harming your most vulnerable, low-income citizens. If your rates violate the principles of distributive justice—where inequalities fail to benefit the least advantaged—the game will severely punish your public standing.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">Keep Prices Low</strong>
+                    If you violently hike electricity prices (the Retail Rate) to pay for your shiny new solar panels, the citizens will revolt. Keep prices steady, or drop them when you have a surplus of cheap green energy, to keep the public happy.
                   </li>
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">The Reliability Mandate</strong>
-                    A functioning society requires a stable foundation for human flourishing. Blackouts are not merely financial failures; they are severe public safety hazards that disrupt hospitals, infrastructure, and lives. You must transition to volatile renewables while upholding the absolute moral imperative of keeping the lights on.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">Keep the Lights On</strong>
+                    Blackouts are a public safety hazard. If you tear down your coal plants too fast without building enough batteries or backup gas to replace them, the city will go dark and your approval rating will instantly crash.
                   </li>
                   <li className="bg-gray-950 p-4 border border-gray-800">
-                    <strong className="text-white block mb-1 uppercase tracking-wider">The Net Zero Mandate</strong>
-                    You are bound by the ethics of intergenerational justice. The mandate to reach 0.00 Tons/MWh by Year 30 is a strict regulatory curve designed to prevent long-term environmental collapse. It is not a suggestion; ignoring it will trigger escalating carbon fines that will swiftly bankrupt your utility.
+                    <strong className="text-white block mb-1 uppercase tracking-wider">Hit Net Zero</strong>
+                    You are legally required to reach 0.00 carbon emissions by Year 30. Look at the Regulatory Target at the top of your screen. If your emissions stay above that line, the government will bury you in carbon fines until you go bankrupt.
                   </li>
                 </ul>
               </div>

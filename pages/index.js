@@ -13,39 +13,33 @@ export default function Dashboard() {
     month, cash, currentIntensity, baselineIntensity, endMonth,
     isPlaying, playSpeed, togglePlay, cycleSpeed, getCarbonTarget,
     compositeApproval, affordabilityIdx, reliabilityIdx, environmentIdx, 
-    demandMultiplier, gameStatus, tutorialStep, retailRate, creditRating,
-    blackoutCount, fleet, isManualOpen, setIsManualOpen
+    effectiveDemandMultiplier, gameStatus, tutorialStep, retailRate, creditRating,
+    blackoutCount, fleet, isManualOpen, setIsManualOpen, consecutiveLowApproval
   } = useGrid();
 
-  // 1. Carbon Win Condition Logic (Fixed for True Net Zero)
-  // We grab the official target for the final month (which should be 0.00)
   const finalTarget = getCarbonTarget(360); 
-  // If you hit 0.00, it is now successfully recognized!
   const isCarbonMet = Number(currentIntensity.toFixed(2)) <= Number(finalTarget.toFixed(2));
 
-  // 2. Granular Failure States
   if (cash < 0) {
     return (
       <div className="bg-gray-950 min-h-screen text-red-500 flex flex-col items-center justify-center font-mono p-10 text-center">
         <h1 className="text-4xl font-bold mb-4">SYSTEM FAILURE: BANKRUPTCY</h1>
-        <p className="text-xl">You ran out of operating funds to fuel the grid. The banks have seized your assets.</p>
+        <p className="text-xl">You ran out of money to fuel the grid. The banks have seized your assets.</p>
       </div>
     );
   }
   
-  if (compositeApproval < 15) {
+  // FIX: Updated to catch the new 6-month Recall Election rules
+  if (compositeApproval < 15 || consecutiveLowApproval >= 6) {
     return (
       <div className="bg-gray-950 min-h-screen text-red-500 flex flex-col items-center justify-center font-mono p-10 text-center">
-        <h1 className="text-4xl font-bold mb-4">SYSTEM FAILURE: MAYOR RECALLED</h1>
-        <p className="text-xl">Your public approval fell below 15%. State regulators have seized the utility.</p>
+        <h1 className="text-4xl font-bold mb-4">SYSTEM FAILURE: RECALLED</h1>
+        <p className="text-xl">You have been recalled from office due to sustained public outrage over grid mismanagement.</p>
       </div>
     );
   }
   
-  // 3. 360-Month End State Evaluation
   if (month > 360) {
-    
-    // A reusable UI component for the stats to keep the code clean
     const Scorecard = () => (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl text-left mt-8 border-t border-gray-800 pt-8">
         <div className="bg-gray-900 border border-gray-700 p-4">
@@ -87,7 +81,7 @@ export default function Dashboard() {
         <div className="bg-gray-950 min-h-screen text-green-500 flex flex-col items-center justify-center font-mono p-10 text-center">
           <h1 className="text-5xl font-bold tracking-tighter mb-2">SIMULATION COMPLETE: VICTORY</h1>
           <p className="text-lg text-gray-300 max-w-2xl">
-            You successfully navigated the physics, economics, and politics of the energy transition. The grid is fully decarbonized, financially solvent, and highly reliable.
+            You successfully navigated the economics and politics of the energy transition. The grid is clean, solvent, and highly reliable.
           </p>
           <Scorecard />
         </div>
@@ -98,62 +92,71 @@ export default function Dashboard() {
       <div className="bg-gray-950 min-h-screen text-yellow-500 flex flex-col items-center justify-center font-mono p-10 text-center">
         <h1 className="text-5xl font-bold tracking-tighter mb-2">SIMULATION COMPLETE: DEFEAT</h1>
         <p className="text-lg text-gray-300 max-w-2xl">
-          You survived your term, but failed to meet the mandate to reach Net Zero carbon emissions with 95% grid reliability. 
+          You survived 30 years, but you failed to hit your Carbon Emissions goal and keep Blackouts under 12. 
         </p>
         <Scorecard />
       </div>
     );
   }
 
-  // 3. Main Dashboard
   return (
-
-    // MASTER CONTAINER: Fixed to screen, dark mode, formatted font
     <div className="h-screen w-screen bg-gray-950 text-white flex flex-col overflow-hidden font-mono p-6 relative">
 
-      {/* OVERLAYS: These MUST be inside the main container to render over the dashboard */}
       {gameStatus === 'start_screen' && <StartScreen />}
       {gameStatus === 'tutorial' && <TutorialOverlay />}
       {gameStatus === 'ended' && <PerformanceReview />}
-      
       <OperationsManual isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
 
-      {/* 1. THE HEADER (Fixed Height) */}
+      {gameStatus !== 'start_screen' && (
+        <div className="flex justify-between items-center bg-gray-900 border border-blue-900/50 p-2 px-4 rounded mb-4 text-xs font-bold text-blue-200 shadow-lg" title="If you fail any of these, you lose the game!">
+          <span className="text-blue-400 uppercase tracking-widest mr-4">Mission Objectives:</span>
+          <div className="flex gap-6">
+             <span className="flex items-center gap-2">
+               ⏱ Survive to M: 360
+             </span>
+             <span className={`flex items-center gap-2 ${currentIntensity <= finalTarget ? 'text-green-400' : ''}`}>
+               🌍 Reach 0.00 Carbon Target
+             </span>
+             <span className={`flex items-center gap-2 ${blackoutCount > 12 ? 'text-red-500' : ''}`}>
+               ⚡ Blackouts: {blackoutCount} / 12 MAX
+             </span>
+          </div>
+        </div>
+      )}
+
       <header className="flex justify-between items-center pb-6 border-b border-gray-800 mb-6 flex-shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tighter text-green-400 flex items-center gap-4">
             GRID MASTER // TERMINAL
-            {/* NEW: The Header Codex Button */}
             <button 
               onClick={() => setIsManualOpen(true)}
               className="text-[10px] bg-blue-900/30 text-blue-400 border border-blue-800 hover:bg-blue-800 hover:text-white px-2 py-1 rounded-sm tracking-widest transition-colors uppercase cursor-pointer"
             >
-              [?] Codex
+              [?] Operations Manual
             </button>
           </h1>
           <div className="flex gap-4 text-xs mt-1 text-gray-400">
              <span className={currentIntensity <= baselineIntensity ? "text-green-500" : "text-orange-500"}>
-               <InfoTip termKey="carbonIntensity" label="CARBON INTENSITY:" /> {currentIntensity.toFixed(2)} Tons/MWh
+               <InfoTip termKey="carbonIntensity" label="CARBON EMISSIONS:" /> {currentIntensity.toFixed(2)} Tons/MWh
              </span>
              <span className="text-orange-500">
-               <InfoTip termKey="regulatoryFines" label="REGULATORY TARGET:" /> &lt; {getCarbonTarget(month).toFixed(2)} TONS/MWh
+               <InfoTip termKey="regulatoryFines" label="CURRENT GOAL:" /> &lt; {getCarbonTarget(month).toFixed(2)} TONS/MWh
              </span>
           </div>
         </div>
         
-        {/* Top Right Stats */}
         <div className="flex gap-4 text-xs items-center">
             <span>MONTH: {month}/360 (YR {Math.ceil(month/12)})</span>
             <span className={cash < 0 ? "text-red-500 font-bold" : ""}>FUNDS: ${(cash / 1000000).toFixed(1)}M</span>
             
             <span className="text-blue-400 flex items-center">
-              <InfoTip termKey="peakDemand" label="DEMAND:" /> &nbsp;{(demandMultiplier * 100).toFixed(0)}%
+              {/* FIX: Displays the visually reduced demand to the player */}
+              <InfoTip termKey="peakDemand" label="DEMAND:" /> &nbsp;{(effectiveDemandMultiplier * 100).toFixed(0)}%
             </span>
             
-            {/* Tripartite Approval Display */}
             <div className="flex gap-3 border-l border-gray-600 pl-4 ml-2 items-center">
               <span className={compositeApproval < 30 ? "text-red-500 font-bold" : "text-green-400 font-bold"}>
-                COMPOSITE: {compositeApproval?.toFixed(1) || 100}%
+                APPROVAL: {compositeApproval?.toFixed(1) || 100}%
               </span>
               <span className="text-gray-500 text-[10px] tracking-widest hidden md:inline">
                 (AFF: {affordabilityIdx?.toFixed(0) || 100}% | REL: {reliabilityIdx?.toFixed(0) || 100}% | ENV: {environmentIdx?.toFixed(0) || 100}%)
@@ -162,25 +165,18 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* 2. THE MAIN CONTENT GRID */}
       <div className="flex-1 min-h-0 flex gap-6">
-        
-        {/* LEFT COLUMN */}
         <div className="w-80 max-w-[20rem] flex-none flex flex-col min-h-0 overflow-x-hidden overflow-y-auto custom-scrollbar">
           <StatusTerminal />
         </div>
 
-        {/* CENTER COLUMN */}
         <div className="flex-1 min-w-0 flex flex-col bg-gray-900 border border-gray-800 relative">
           <LoadBalancer />
         </div>
 
-        {/* RIGHT COLUMN */}
         <div className="w-80 flex-none flex flex-col min-h-0 gap-4">
-          
           <ResourceManager />
 
-          {/* PLAYBACK CONTROLS */}
           <div className="flex-shrink-0 grid grid-cols-3 gap-2">
             <button 
               onClick={togglePlay}
@@ -212,11 +208,8 @@ export default function Dashboard() {
               STEP
             </button>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }

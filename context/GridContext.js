@@ -2,6 +2,11 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const GridContext = createContext();
 
+const DAILY_DEMAND_PROFILE = [
+  520, 480, 450, 450, 460, 500, 580, 670, 740, 780, 810, 830, 
+  840, 850, 860, 880, 920, 970, 1000, 980, 940, 860, 740, 610
+];
+
 export const GridProvider = ({ children }) => {
   const [financialReport, setFinancialReport] = useState({ revenue: 0, taxes: 0, opex: 0, debt: 0 });
   const [month, setMonth] = useState(1);
@@ -26,24 +31,32 @@ export const GridProvider = ({ children }) => {
   const [gameStatus, setGameStatus] = useState('start_screen'); 
   const [blackoutCount, setBlackoutCount] = useState(0);
   
-  // NEW: The Tutorial Tracker
   const [tutorialStep, setTutorialStep] = useState(1);
   const [isManualOpen, setIsManualOpen] = useState(false);
+  const [previewAction, setPreviewAction] = useState(null); 
+
+  // NEW: Version 1.1 State Trackers
+  const [consecutiveLowApproval, setConsecutiveLowApproval] = useState(0);
+  const [consecutiveCarbonFails, setConsecutiveCarbonFails] = useState(0);
+
+  // NEW: Price Elasticity Formula (Demand drops 2.5% for every 10% rate increase over 0.16 baseline)
+  const elasticityFactor = retailRate > 0.16 ? Math.max(0.5, 1 - ((retailRate - 0.16) / 0.016) * 0.025) : 1.0;
+  const effectiveDemandMultiplier = demandMultiplier * elasticityFactor;
 
   const startGame = () => {
     setGameStatus('playing');
-    setTutorialStep(0); // <-- THE FIX: Kill the spotlights!
-    setEventLog([{ m: 1, text: "Month 1: Operations Commenced. Grid is live." }]);
+    setTutorialStep(0); 
+    setEventLog([{ m: 1, text: "Month 1: You are now the Grid Master. Keep the lights on." }]);
   };
 
   const startTutorial = () => {
     setGameStatus('tutorial');
-    setTutorialStep(1); // Force reset to step 1
+    setTutorialStep(1); 
     setIsPlaying(false); 
     setEventLog([{ m: 1, text: "Month 1: Tutorial Mode Engaged. Time is frozen." }]);
   };
 
-  const startingCo2 = (400 * 1.0 * 730) + (350 * 0.4 * 730);
+  const startingCo2 = (500 * 1.0 * 730) + (400 * 0.6 * 730);
   const startingMWh = 1000 * 730;
   const startingIntensity = startingCo2 / startingMWh;
   
@@ -51,52 +64,51 @@ export const GridProvider = ({ children }) => {
   const [currentIntensity, setCurrentIntensity] = useState(startingIntensity);
 
   const [fleet, setFleet] = useState({
-    coal: 400, gas: 400, nuclear: 200, solar: 0, wind: 0, storage: 0 
+    coal: 500, gas: 400, ccg: 0, nuclear: 200, solar: 0, wind: 0, storage: 0 
   });
 
   const endMonth = () => {
     if (month > 360) return;
     let currentLog = `Month ${month + 1} System Check. `;
-    let demandMultiplier = 1.0;
+    let currentDemandMultiplier = effectiveDemandMultiplier;
     let solarMultiplier = 1.0 - (Math.random() * 0.3); 
     let windMultiplier = 1.0 - (Math.random() * 0.4);  
 
     setWeatherModifiers({ solar: solarMultiplier, wind: windMultiplier });
 
-    // NEW: Explain the RNG weather to the player!
-    if (solarMultiplier < 0.75) currentLog += "WEATHER: Heavy cloud cover. Solar output dropped. ";
-    if (windMultiplier < 0.7) currentLog += "WEATHER: Wind doldrums. Turbine output reduced. ";
+    if (solarMultiplier < 0.75) currentLog += "WEATHER: Heavy clouds. Solar power dropped. ";
+    if (windMultiplier < 0.7) currentLog += "WEATHER: Low wind. Turbine power reduced. ";
 
     if (month + 1 === 7 || month + 1 === 19) {
-      demandMultiplier = 1.15;
-      currentLog += "WARNING: Summer Heatwave detected. Demand spiking. ";
+      currentDemandMultiplier *= 1.15;
+      currentLog += "WARNING: Summer Heatwave! Citizens are blasting air conditioning. ";
     } else if (month + 1 === 1) { 
       solarMultiplier *= 0.8;
     }
 
     let activeCoal = fleet.coal;
     let activeGas = fleet.gas;
+    let activeCCG = fleet.ccg;
     if (Math.random() < 0.05) {
       activeCoal = Math.max(0, fleet.coal - 100); 
-      currentLog += "CRITICAL: Coal unit unplanned outage! ";
+      currentLog += "ALERT: A coal plant broke down! ";
     }
     if (Math.random() < 0.05) {
       activeGas = Math.max(0, fleet.gas - 50); 
-      currentLog += "CRITICAL: Gas peaker offline for emergency repairs! ";
+      currentLog += "ALERT: A gas peaker was taken offline for emergency repairs! ";
     }
 
-    const peakDemand = 1000 * demandMultiplier;
-    const supply = activeCoal + activeGas + fleet.nuclear + (fleet.solar * solarMultiplier) + (fleet.wind * windMultiplier) + fleet.storage;
+    const peakDemand = 1000 * currentDemandMultiplier;
+    const supply = activeCoal + activeCCG + activeGas + fleet.nuclear + (fleet.solar * solarMultiplier) + (fleet.wind * windMultiplier) + fleet.storage;
     
     const deliveredMW = Math.min(supply, peakDemand);
     const deliveredMWh = deliveredMW * 730; 
     const grossRevenue = deliveredMWh * (retailRate * 1000); 
     
-    // NEW: T&D Sprawl Penalty. Using more land aggressively multiplies your T&D maintenance costs.
     const sprawlMultiplier = 1 + (Math.max(0, (usedLand - 1000) / totalLand) * 0.2);
     const tanddOverhead = deliveredMWh * 50 * sprawlMultiplier;
 
-    const variableOpEx = (activeCoal * 730 * 85) + (activeGas * 730 * 110) + (fleet.nuclear * 730 * 10);
+    const variableOpEx = (activeCoal * 730 * 85) + (activeGas * 730 * 110) + (activeCCG * 730 * 40) + (fleet.nuclear * 730 * 10);
     const fixedOpEx = (fleet.solar * (20000 / 12)) + (fleet.wind * (35000 / 12)) + (fleet.storage * (30000 / 12));
     const totalOpEx = variableOpEx + fixedOpEx;
 
@@ -106,19 +118,12 @@ export const GridProvider = ({ children }) => {
     let simulatedCharge = 0;
 
     for (let i = 0; i < 24; i++) {
-      let baseD = 600; 
-      if (i >= 6 && i <= 9) baseD += Math.sin((i - 6) * Math.PI / 3) * 150; 
-      if (i >= 15 && i <= 21) baseD += Math.sin((i - 15) * Math.PI / 6) * 350; 
-      let d = baseD * demandMultiplier;
+      let d = DAILY_DEMAND_PROFILE[i] * currentDemandMultiplier;
       
       let sOutput = 0;
       if (i >= 7 && i <= 18) sOutput = fleet.solar * Math.sin((i - 7) * Math.PI / 11) * solarMultiplier;
-      
-      // NEW: Wind Volatility. A baseline of 30% capacity, modified by a noisy wave function and the monthly weather
       let wOutput = fleet.wind * (0.30 + (0.15 * Math.sin(i * 0.8)) + (0.05 * Math.cos(i * 2))) * windMultiplier;
-
-      let baseload = activeCoal + activeGas + fleet.nuclear;
-      
+      let baseload = activeCoal + activeCCG + activeGas + fleet.nuclear;
       let netLoad = d - (sOutput + wOutput + baseload);
       
       if (netLoad < 0) {
@@ -131,16 +136,12 @@ export const GridProvider = ({ children }) => {
 
     let activeCharge = simulatedCharge; 
     for (let i = 0; i < 24; i++) {
-      let baseD = 600; 
-      if (i >= 6 && i <= 9) baseD += Math.sin((i - 6) * Math.PI / 3) * 150; 
-      if (i >= 15 && i <= 21) baseD += Math.sin((i - 15) * Math.PI / 6) * 350; 
-      let d = baseD * demandMultiplier;
+      let d = DAILY_DEMAND_PROFILE[i] * currentDemandMultiplier;
       
       let sOutput = 0;
       if (i >= 7 && i <= 18) sOutput = fleet.solar * Math.sin((i - 7) * Math.PI / 11) * solarMultiplier;
       let wOutput = (fleet?.wind || 0) * (0.30 + (0.15 * Math.sin(i * 0.8)) + (0.05 * Math.cos(i * 2))) * weatherModifiers.wind; 
-      let baseload = activeCoal + activeGas + fleet.nuclear;
-      
+      let baseload = activeCoal + activeCCG + activeGas + fleet.nuclear;
       let netLoad = d - (sOutput + wOutput + baseload);
 
       if (netLoad < 0) {
@@ -160,21 +161,21 @@ export const GridProvider = ({ children }) => {
     let eueMWh = dailyEUE * 30.4;
     let vollPenalty = eueMWh * 1000; 
     if (eueMWh > 0) {
-      currentLog += `BLACKOUT: ${Math.round(eueMWh).toLocaleString()} MWh unserved. VOLL Fine: -$${(vollPenalty/1000000).toFixed(2)}M. `;
+      currentLog += `BLACKOUT: Demand exceeded supply! You paid an emergency penalty of -$${(vollPenalty/1000000).toFixed(2)}M. `;
     }
 
     let curtailmentPenalty = dailyCurtailment * 30.4 * 20; 
     const pilotDividend = grossRevenue * 0.05;
     const netCashFlow = grossRevenue - tanddOverhead - totalOpEx - curtailmentPenalty - pilotDividend - vollPenalty;
 
-    let newlyBuilt = { coal: 0, gas: 0, nuclear: 0, solar: 0, wind: 0, storage: 0 };
+    let newlyBuilt = { coal: 0, gas: 0, ccg: 0, nuclear: 0, solar: 0, wind: 0, storage: 0 };
     const updatedQueue = constructionQueue.map(p => ({ ...p, monthsLeft: p.monthsLeft - 1 }));
     const finishedProjects = updatedQueue.filter(p => p.monthsLeft <= 0);
     const remainingQueue = updatedQueue.filter(p => p.monthsLeft > 0);
 
     finishedProjects.forEach(p => {
       newlyBuilt[p.type] += p.capacity;
-      currentLog += `COMPLETED: ${p.capacity}MW ${p.type} online. `;
+      currentLog += `CONSTRUCTION FINISHED: ${p.capacity}MW of ${p.type} is now generating power. `;
     });
 
     const healthModifier = (reliability / 100) * (0.12 / retailRate);
@@ -205,7 +206,8 @@ export const GridProvider = ({ children }) => {
       solar: prev.solar + newlyBuilt.solar,
       wind: prev.wind + newlyBuilt.wind,
       storage: prev.storage + newlyBuilt.storage,
-      gas: prev.gas + newlyBuilt.gas
+      gas: prev.gas + newlyBuilt.gas,
+      ccg: prev.ccg + newlyBuilt.ccg
     }));
     
     setConstructionQueue(remainingQueue);
@@ -213,7 +215,7 @@ export const GridProvider = ({ children }) => {
     setCreditRating(newRating);
     
     const monthlyMWh = peakDemand * 730;
-    const currentMonthlyCo2 = (activeCoal * 1.0 * 730) + (activeGas * 0.4 * 730);
+    const currentMonthlyCo2 = (activeCoal * 1.0 * 730) + (activeCCG * 0.4 * 730) + (activeGas * 0.6 * 730);
     setCo2(prev => prev + currentMonthlyCo2);
     
     const intensity = currentMonthlyCo2 / monthlyMWh;
@@ -222,38 +224,68 @@ export const GridProvider = ({ children }) => {
     const target = getCarbonTarget(month);
     let carbonFine = 0;
     
+    // NEW: Progressive Geometric Fines
+    let nextConsecutiveCarbonFails = consecutiveCarbonFails;
     if (intensity > target && month > 12) {
+      nextConsecutiveCarbonFails += 1;
       const excessIntensity = intensity - target;
       const totalExcessTons = excessIntensity * monthlyMWh;
       const penaltyRate = month <= 120 ? 50 : month <= 240 ? 150 : 500;
-      carbonFine = totalExcessTons * penaltyRate;
-      currentLog += `REGULATORY: Carbon limit exceeded. Fine of $${(carbonFine/1000000).toFixed(2)}M applied. `;
+      const baseFine = totalExcessTons * penaltyRate;
+      
+      carbonFine = baseFine * Math.pow(1.15, nextConsecutiveCarbonFails - 1);
+      currentLog += `EMISSIONS FINE: Target failed for ${nextConsecutiveCarbonFails} month(s). Fined -$${(carbonFine/1000000).toFixed(2)}M. `;
+    } else {
+      nextConsecutiveCarbonFails = 0;
     }
+    setConsecutiveCarbonFails(nextConsecutiveCarbonFails);
 
-    if (retailRate > lastRetailRate) {
+    // NEW: Affordability with aggressive 10% compounding decay if Rate > 50% baseline
+    let nextAffordability = affordabilityIdx;
+    if (retailRate > 0.24) {
+      nextAffordability *= 0.90; 
+      currentLog += "PUBLIC OUTRAGE: Energy prices are crippling the city. Approval plummeting! ";
+    } else if (retailRate > lastRetailRate) {
       const rateHike = (retailRate - lastRetailRate) * 100;
-      setAffordabilityIdx(prev => Math.max(0, prev - (rateHike * 8))); 
+      nextAffordability = Math.max(0, nextAffordability - (rateHike * 8)); 
     } else if (retailRate <= 0.12) {
-      setAffordabilityIdx(prev => Math.min(100, prev + 1.5)); 
+      nextAffordability = Math.min(100, nextAffordability + 1.5); 
     }
+    setAffordabilityIdx(nextAffordability);
 
+    let nextReliability = reliabilityIdx;
     if (eueMWh > 0) {
       const reliabilityHit = (eueMWh / (peakDemand * 730)) * 1000; 
-      setReliabilityIdx(prev => Math.max(0, prev - reliabilityHit));
+      nextReliability = Math.max(0, nextReliability - reliabilityHit);
       setBlackoutCount(prev => prev + 1); 
     } else {
-      setReliabilityIdx(prev => Math.min(100, prev + 2.0));
+      nextReliability = Math.min(100, nextReliability + 2.0);
     }
+    setReliabilityIdx(nextReliability);
 
+    let nextEnvironment = environmentIdx;
     if (intensity > getCarbonTarget(month)) {
-      setEnvironmentIdx(prev => Math.max(0, prev - 2.5)); 
+      nextEnvironment = Math.max(0, nextEnvironment - 2.5); 
     } else {
-      setEnvironmentIdx(prev => Math.min(100, prev + 1.0)); 
+      nextEnvironment = Math.min(100, nextEnvironment + 1.0); 
     }
+    setEnvironmentIdx(nextEnvironment);
 
-    if (compositeApproval < 15) {
+    // NEW: "Recall Election" Political Fail State (6 Months under 25%)
+    const nextComposite = (nextAffordability * 0.4) + (nextReliability * 0.4) + (nextEnvironment * 0.2);
+    let nextConsecutiveLowApproval = consecutiveLowApproval;
+    
+    if (nextComposite < 25) {
+      nextConsecutiveLowApproval += 1;
+      currentLog += `WARNING: Approval critically low (${nextConsecutiveLowApproval}/6 months). Recall imminent! `;
+    } else {
+      nextConsecutiveLowApproval = 0;
+    }
+    setConsecutiveLowApproval(nextConsecutiveLowApproval);
+
+    if (nextComposite < 15 || nextConsecutiveLowApproval >= 6) {
       setIsPlaying(false);
-      currentLog += "CRITICAL: Mayor recalled. Utility operations seized by state regulators. GAME OVER.";
+      currentLog += "GAME OVER: You have been recalled from office due to sustained public outrage.";
     }
 
     setFinancialReport({ 
@@ -267,9 +299,7 @@ export const GridProvider = ({ children }) => {
     setCash(prev => prev + finalCashFlow);
 
     let nextStreak = consecutiveGoodMonths;
-    let newMultiplier = demandMultiplier;
-
-    if (affordabilityIdx > 80 && reliabilityIdx > 80) {
+    if (nextAffordability > 80 && nextReliability > 80) {
       nextStreak += 1;
     } else {
       nextStreak = 0; 
@@ -277,13 +307,11 @@ export const GridProvider = ({ children }) => {
 
     if (nextStreak >= 12) {
       setDemandMultiplier(prev => prev + 0.05);
-      currentLog += `URBAN BOOM: Cheap, reliable power triggered an EV & Heat Pump adoption wave! Demand +5%. `;
+      currentLog += `URBAN BOOM: Cheap, reliable power caused a population surge! Base demand +5%. `;
       nextStreak = 0; 
     }
 
     setConsecutiveGoodMonths(nextStreak);
-
-    // FIX: The buggy telemetry block that was trapped here has been completely removed.
     
     setEventLog(prev => [{ m: month + 1, text: currentLog }, ...prev]);
     setLastRetailRate(retailRate); 
@@ -299,13 +327,11 @@ export const GridProvider = ({ children }) => {
 
   const [weatherModifiers, setWeatherModifiers] = useState({ solar: 1.0, wind: 1.0 });
 
-  // --- AUTOMATED TELEMETRY WATCHER ---
   useEffect(() => {
-    // Abort if game is not active or has already triggered the end state
     if (gameStatus === 'start_screen' || gameStatus === 'tutorial' || gameStatus === 'ended') return;
 
-    // Trigger on any of the three failure/success states
-    if (month > 360 || cash < 0 || compositeApproval < 15) {
+    // FIX: Telemetry watcher now triggers if the 6-month Recall condition is met
+    if (month > 360 || cash < 0 || compositeApproval < 15 || consecutiveLowApproval >= 6) {
       setIsPlaying(false);
       setGameStatus('ended');
 
@@ -343,44 +369,42 @@ export const GridProvider = ({ children }) => {
         .catch(err => console.error("Telemetry fetch error:", err));
       }
     }
-  }, [month, cash, compositeApproval, gameStatus, currentIntensity, blackoutCount, fleet, retailRate]); 
-  // -----------------------------------
+  }, [month, cash, compositeApproval, gameStatus, currentIntensity, blackoutCount, fleet, retailRate, consecutiveLowApproval]); 
 
-
-  // --- MODULE 2: SPATIAL CONSTRAINTS & LAND USE ---
   const totalLand = 5000; 
-  const landUsage = { nuclear: 1, gas: 1, coal: 1.5, storage: 0.1, solar: 7, wind: 40 };
+  const landUsage = { nuclear: 1, ccg: 1.5, gas: 1, coal: 1.5, storage: 0.1, solar: 7, wind: 40 };
 
-  const fleetLand = (fleet.nuclear * landUsage.nuclear) + (fleet.gas * landUsage.gas) + (fleet.coal * landUsage.coal) + 
+  const fleetLand = (fleet.nuclear * landUsage.nuclear) + (fleet.gas * landUsage.gas) + (fleet.ccg * landUsage.ccg) + (fleet.coal * landUsage.coal) + 
                     (fleet.storage * landUsage.storage) + (fleet.solar * landUsage.solar) + (fleet.wind * landUsage.wind);
   
   const queuedLand = constructionQueue.reduce((acc, project) => acc + (project.capacity * landUsage[project.type]), 0);
   
   const usedLand = fleetLand + queuedLand;
+  
   const buildPlant = (type, baseCost, capacity) => {
     const requiredLand = capacity * landUsage[type];
     const isRemote = (usedLand + requiredLand) > totalLand;
     let totalCost = baseCost;
-    let eventMsg = `CAPEX APPROVED: ${capacity}MW ${type} entering pipeline.`;
+    let eventMsg = `CONSTRUCTION STARTED: Building ${capacity}MW of ${type}.`;
 
     if (isRemote) {
       const txFee = (capacity / 100) * 30000000; 
       totalCost += txFee;
-      eventMsg = `REMOTE CAPEX: ${capacity}MW ${type} + $${(txFee/1000000).toFixed(0)}M Interconnection Fee.`;
+      eventMsg = `REMOTE CONSTRUCTION: Building ${capacity}MW of ${type}. Extra -$${(txFee/1000000).toFixed(0)}M paid for long-distance wires.`;
     }
 
     if (cash >= totalCost) {
       setCash(prev => prev - totalCost);
-      const delays = { solar: 12, storage: 12, wind: 24, gas: 36, nuclear: 120, coal: 0 };
+      const delays = { solar: 12, storage: 12, wind: 24, gas: 36, ccg: 48, nuclear: 120, coal: 0 };
       setConstructionQueue(prev => [...prev, { type, capacity, monthsLeft: delays[type] }]);
       
-      if (!isRemote && (type === 'gas' || type === 'coal' || type === 'nuclear')) {
+      if (!isRemote && (type === 'gas' || type === 'ccg' || type === 'coal' || type === 'nuclear')) {
         setEnvironmentIdx(prev => Math.max(0, prev - 15));
-        eventMsg += ` LOCAL NIMBY BACKLASH: Protests erupt over ${type} zoning!`;
+        eventMsg += ` LOCAL PROTESTS: Citizens are angry about the new ${type} plant!`;
       }
       setEventLog(prev => [{ m: month, text: eventMsg }, ...prev]);
     } else {
-      setEventLog(prev => [{ m: month, text: `FINANCE REJECTED: Insufficient funds for ${type} CapEx.` }, ...prev]);
+      setEventLog(prev => [{ m: month, text: `BANKRUPTCY WARNING: Not enough money to build ${type}.` }, ...prev]);
     }
   };
 
@@ -388,7 +412,7 @@ export const GridProvider = ({ children }) => {
     if (cash >= fee && fleet[type] >= capacity) {
       setCash(prev => prev - fee);
       setFleet(prev => ({ ...prev, [type]: prev[type] - capacity }));
-      setEventLog(prev => [{ m: month, text: `ASSET RETIRED: ${capacity}MW of ${type} decommissioned.` }, ...prev]);
+      setEventLog(prev => [{ m: month, text: `DEMOLISHED: ${capacity}MW of ${type} safely removed.` }, ...prev]);
     }
   };
 
@@ -406,12 +430,12 @@ export const GridProvider = ({ children }) => {
 
     setBonds(prev => [...prev, { amount, rate, years, monthsLeft: numPayments, monthlyPayment }]);
     setCash(prev => prev + amount);
-    setEventLog(prev => [{ m: month, text: `FINANCE: Issued $${amount/1000000}M bond at ${(rate*100).toFixed(1)}%.` }, ...prev]);
+    setEventLog(prev => [{ m: month, text: `LOAN SECURED: Borrowed $${amount/1000000}M at ${(rate*100).toFixed(1)}% interest.` }, ...prev]);
   };
 
   useEffect(() => {
     let interval;
-    if (isPlaying && month <= 360 && cash >= 0 && compositeApproval >= 15) {
+    if (isPlaying && month <= 360 && cash >= 0 && compositeApproval >= 15 && consecutiveLowApproval < 6) {
       interval = setInterval(() => {
         endMonth();
       }, playSpeed);
@@ -419,7 +443,7 @@ export const GridProvider = ({ children }) => {
       setIsPlaying(false); 
     }
     return () => clearInterval(interval);
-  }, [isPlaying, playSpeed, month, cash, compositeApproval]); 
+  }, [isPlaying, playSpeed, month, cash, compositeApproval, consecutiveLowApproval]); 
   
   const togglePlay = () => setIsPlaying(!isPlaying);
   const cycleSpeed = () => setPlaySpeed(prev => prev === 1000 ? 250 : prev === 250 ? 50 : 1000);
@@ -436,7 +460,8 @@ export const GridProvider = ({ children }) => {
       environmentIdx, issueBond, demandMultiplier,
       gameStatus, startGame, startTutorial, blackoutCount, 
       tutorialStep, setTutorialStep, weatherModifiers,
-      isManualOpen, setIsManualOpen
+      isManualOpen, setIsManualOpen, previewAction, setPreviewAction,
+      effectiveDemandMultiplier, consecutiveLowApproval // Exposed for the UI files
     }}>
       {children}
     </GridContext.Provider>
