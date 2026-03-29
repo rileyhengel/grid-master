@@ -242,8 +242,8 @@ export const GridProvider = ({ children }) => {
 
     // NEW: Affordability with aggressive 10% compounding decay if Rate > 50% baseline
     let nextAffordability = affordabilityIdx;
-    if (retailRate > 0.24) {
-      nextAffordability *= 0.90; 
+    if (retailRate > 0.20) {
+      nextAffordability *= (1-0.10*(retailRate-19)/6); 
       currentLog += "PUBLIC OUTRAGE: Energy prices are crippling the city. Approval plummeting! ";
     } else if (retailRate > lastRetailRate) {
       const rateHike = (retailRate - lastRetailRate) * 100;
@@ -275,7 +275,7 @@ export const GridProvider = ({ children }) => {
     const nextComposite = (nextAffordability * 0.4) + (nextReliability * 0.4) + (nextEnvironment * 0.2);
     let nextConsecutiveLowApproval = consecutiveLowApproval;
     
-    if (nextComposite < 25) {
+    if (nextComposite < 50) {
       nextConsecutiveLowApproval += 1;
       currentLog += `WARNING: Approval critically low (${nextConsecutiveLowApproval}/6 months). Recall imminent! `;
     } else {
@@ -283,7 +283,7 @@ export const GridProvider = ({ children }) => {
     }
     setConsecutiveLowApproval(nextConsecutiveLowApproval);
 
-    if (nextComposite < 15 || nextConsecutiveLowApproval >= 6) {
+    if (nextComposite < 40 || nextConsecutiveLowApproval >= 6) {
       setIsPlaying(false);
       currentLog += "GAME OVER: You have been recalled from office due to sustained public outrage.";
     }
