@@ -1,131 +1,156 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGrid } from '../context/GridContext';
-import InfoTip from './InfoTip'; // <-- NEW: Imported the tooltip component
+import InfoTip from './InfoTip';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function StatusTerminal() {
-  const { eventLog, cashFlow, constructionQueue, bonds, financialReport } = useGrid();
+  const { 
+    eventLog, financialReport, cashFlow, constructionQueue,
+    retailRate, setRetailRate, creditRating, issueBond, tutorialStep
+  } = useGrid();
+
   const [activeTab, setActiveTab] = useState('events');
+  const [isLedgerExpanded, setIsLedgerExpanded] = useState(false);
+
+  useEffect(() => {
+    if (tutorialStep === 4 || tutorialStep === 6) {
+      setActiveTab('finances');
+    }
+  }, [tutorialStep]);
+
+  const totalExpenses = (financialReport.opex || 0) + (financialReport.tandd || 0) + (financialReport.pilot || 0);
+  const totalPenalties = (financialReport.voll || 0) + (financialReport.curtailment || 0) + (financialReport.fines || 0);
 
   return (
-    <div className="w-full flex flex-col bg-gray-900 border border-gray-700 p-4 min-h-full">
-      
-      {/* Tab Navigation (Locked to a horizontal row) */}
-      <div className="flex justify-center gap-6 mb-4 border-b border-gray-800 pb-2 text-xs font-bold tracking-widest text-gray-500 uppercase">
-        <button onClick={() => setActiveTab('events')} className={`uppercase tracking-widest text-sm ${activeTab === 'events' ? 'text-green-400 font-bold' : 'text-gray-600'}`}>Events</button>
-        <button onClick={() => setActiveTab('finance')} className={`uppercase tracking-widest text-sm ${activeTab === 'finance' ? 'text-green-400 font-bold' : 'text-gray-600'}`}>Finances</button>
-        <button onClick={() => setActiveTab('pipeline')} className={`uppercase tracking-widest text-sm ${activeTab === 'pipeline' ? 'text-green-400 font-bold' : 'text-gray-600'}`}>Pipeline</button>
+    <div className="flex flex-col h-full bg-gray-900 border border-gray-800">
+      <div className="flex border-b border-gray-800 shrink-0">
+         <button 
+            onClick={() => setActiveTab('events')} 
+            className={`flex-1 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors ${activeTab === 'events' ? 'border-b-2 border-blue-500 text-blue-400 bg-gray-800/50' : 'text-gray-500 hover:bg-gray-800'}`}
+         >
+            Events
+         </button>
+         <button 
+            onClick={() => setActiveTab('finances')} 
+            className={`flex-1 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors ${activeTab === 'finances' ? 'border-b-2 border-green-500 text-green-400 bg-gray-800/50' : 'text-gray-500 hover:bg-gray-800'}`}
+         >
+            Finances
+         </button>
+         <button 
+            onClick={() => setActiveTab('pipeline')} 
+            className={`flex-1 py-2 text-[10px] uppercase tracking-widest font-bold transition-colors ${activeTab === 'pipeline' ? 'border-b-2 border-yellow-500 text-yellow-400 bg-gray-800/50' : 'text-gray-500 hover:bg-gray-800'}`}
+         >
+            Pipeline
+         </button>
       </div>
-      
-      {/* Tab Content Area (Locked to a scrolling vertical column) */}
-      <div className="flex-1 overflow-y-auto min-h-0 pr-2">
+
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar min-h-0">
         
         {activeTab === 'events' && (
-          <div className="space-y-3 text-xs">
-            {eventLog.map((event, i) => (
-              <div key={i} className={i === 0 ? "text-green-300 animate-pulse" : "text-green-800"}>
-                <span className="font-bold">[{event.m}/360]</span> {event.text}
+          <div className="space-y-3">
+            {eventLog.map((log, i) => (
+              <div key={i} className="text-xs text-gray-300 leading-relaxed font-mono">
+                <span className="text-blue-400 font-bold">[{log.m}/360]</span> {log.text}
               </div>
             ))}
           </div>
         )}
 
-        {activeTab === 'finance' && (
-          <div className="text-xs flex flex-col gap-4">
-            
-            {/* Expandable Ledger V3 */}
-            <details className="bg-gray-900 border border-gray-700 group cursor-pointer">
-              <summary className="p-3 outline-none flex justify-between items-center list-none">
-                <div>
-                  <div className="text-gray-400 mb-1">Monthly Cash Flow <span className="text-[10px] ml-2 group-open:hidden">▼ Click to expand</span><span className="text-[10px] ml-2 hidden group-open:inline">▲ Hide</span></div>
-                  <div className={`text-lg font-bold ${cashFlow >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {cashFlow >= 0 ? '+' : '-'}${Math.abs(cashFlow / 1000000).toFixed(2)}M
-                  </div>
-                </div>
-              </summary>
-              <div className="p-3 pt-0 border-t border-gray-800 space-y-1 mt-1 font-mono text-[11px]">
-                <div className="flex justify-between text-green-400"><span>Gross Revenue:</span> <span>+${(financialReport.revenue / 1000000).toFixed(2)}M</span></div>
-                <div className="flex justify-between text-red-400"><span>T&D Overhead:</span> <span>-${(financialReport.tandd / 1000000).toFixed(2)}M</span></div>
-                <div className="flex justify-between text-red-400"><span>OpEx (Fuel/Fixed):</span> <span>-${(financialReport.opex / 1000000).toFixed(2)}M</span></div>
-                <div className="flex justify-between text-orange-400"><span>Curtailment Fee:</span> <span>-${(financialReport.curtailment / 1000000).toFixed(2)}M</span></div>
-                <div className="flex justify-between text-purple-400"><span>City PILOT Div:</span> <span>-${(financialReport.pilot / 1000000).toFixed(2)}M</span></div>
-                <div className="flex justify-between text-red-500 font-bold"><span>VOLL Penalty:</span> <span>-${(financialReport.voll ? financialReport.voll / 1000000 : 0).toFixed(2)}M</span></div>
-                <div className="flex justify-between text-red-400"><span>Debt Service:</span> <span>-${(financialReport.debt / 1000000).toFixed(2)}M</span></div>
-                <div className="flex justify-between text-orange-500 font-bold"><span>Carbon Fines:</span> <span>-${(financialReport.fines / 1000000).toFixed(2)}M</span></div>
-              </div>
-            </details>
+        {activeTab === 'finances' && (
+           <div className="flex flex-col gap-6">
+             <div className="bg-gray-950 p-3 border border-gray-800 rounded-sm">
+                <label className="text-xs text-gray-400 flex justify-between mb-2 font-bold tracking-widest uppercase">
+                  <span><InfoTip termKey="retailRate" label="Retail Rate" /></span>
+                  <span className={retailRate > 0.16 ? "text-red-400" : "text-green-400"}>${retailRate.toFixed(2)}/kWh</span>
+                </label>
+                <input 
+                  type="range" min="0.10" max="0.25" step="0.01" 
+                  value={retailRate} 
+                  onChange={(e) => setRetailRate(parseFloat(e.target.value))}
+                  className="w-full accent-green-500"
+                />
+             </div>
 
-            <div className="bg-gray-900 p-3 border border-gray-700">
-              <div className="text-gray-400 mb-2 border-b border-gray-700 pb-1 text-sm tracking-wider uppercase">
-                {/* APPLIED TOOLTIP */}
-                <InfoTip termKey="lcoe" label="OpEx / MWh (LCOE)" />
-              </div>
-              <div className="space-y-2 text-xs">
+             <div className="bg-gray-950 p-3 border border-gray-800 rounded-sm">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-xs text-gray-400 uppercase font-bold tracking-widest"><InfoTip termKey="bond" label="Bond Market" /></span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${creditRating === 'AAA' ? 'bg-green-900 text-green-300' : creditRating === 'JUNK' ? 'bg-red-900 text-red-300' : 'bg-yellow-900 text-yellow-300'}`}>
+                    RATING: {creditRating}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => issueBond(100000000, 10)} 
+                  className={`w-full text-xs py-2 uppercase tracking-widest transition-all ${
+                    tutorialStep === 4 
+                      ? 'relative z-[70] bg-purple-800 text-white ring-4 ring-purple-500 ring-offset-2 ring-offset-gray-900 animate-pulse scale-105' 
+                      : 'bg-gray-800 border border-gray-600 hover:bg-gray-700 text-white'
+                  }`}
+                >
+                  Issue $100M Bond (10 Yr)
+                </button>
+             </div>
+
+             <div className="flex flex-col gap-2 border-t border-gray-800 pt-4">
+                <div className="flex justify-between items-center mb-1">
+                  <h3 className="text-[10px] text-gray-500 uppercase tracking-widest">Monthly Ledger</h3>
+                  <button 
+                    onClick={() => setIsLedgerExpanded(!isLedgerExpanded)}
+                    className="flex items-center gap-1 text-[9px] uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    {isLedgerExpanded ? <><ChevronUp size={12}/> Hide</> : <><ChevronDown size={12}/> Details</>}
+                  </button>
+                </div>
+
+                {/* 1. GROSS REVENUE */}
+                <div className="flex justify-between text-xs"><span className="text-gray-400"><InfoTip termKey="grossRevenue" label="Gross Revenue" /></span><span className="text-green-400">+${(financialReport.revenue / 1000000).toFixed(2)}M</span></div>
                 
-                <div className="flex items-center">
-                  {/* APPLIED TOOLTIP */}
-                  <span className="w-16 text-gray-400"><InfoTip termKey="gas" label="Gas:" /></span>
-                  <div className="flex-1 bg-gray-800 h-3 mx-2 rounded-sm overflow-hidden">
-                    <div className="bg-orange-700 h-full" style={{width: '100%'}}></div>
+                {/* 2. TOTAL EXPENSES (Expandable) */}
+                <div className="flex justify-between text-xs"><span className="text-gray-400"><InfoTip termKey="totalExpenses" label="Total Expenses" /></span><span className="text-red-400">-${(totalExpenses / 1000000).toFixed(2)}M</span></div>
+                {isLedgerExpanded && (
+                  <div className="pl-2 border-l-2 border-gray-700 flex flex-col gap-1 my-1">
+                    <div className="flex justify-between text-[10px]"><span className="text-gray-500"><InfoTip termKey="opex" label="Plant OpEx" /></span><span className="text-red-400/70">-${(financialReport.opex / 1000000).toFixed(2)}M</span></div>
+                    <div className="flex justify-between text-[10px]"><span className="text-gray-500"><InfoTip termKey="tandd" label="T&D Overhead" /></span><span className="text-red-400/70">-${(financialReport.tandd / 1000000).toFixed(2)}M</span></div>
+                    <div className="flex justify-between text-[10px]"><span className="text-gray-500"><InfoTip termKey="pilotDividend" label="City Pilot Dividend (5%)" /></span><span className="text-red-400/70">-${(financialReport.pilot / 1000000).toFixed(2)}M</span></div>
                   </div>
-                  <span className="w-10 text-right text-gray-300">$100</span>
-                </div>
+                )}
 
-                <div className="flex items-center">
-                  {/* APPLIED TOOLTIP */}
-                  <span className="w-16 text-gray-400"><InfoTip termKey="coal" label="Coal:" /></span>
-                  <div className="flex-1 bg-gray-800 h-3 mx-2 rounded-sm overflow-hidden">
-                    <div className="bg-gray-600 h-full" style={{width: '85%'}}></div>
-                  </div>
-                  <span className="w-10 text-right text-gray-300">$85</span>
-                </div>
+                {/* 3. DEBT SERVICE */}
+                <div className="flex justify-between text-xs"><span className="text-gray-400"><InfoTip termKey="debtService" label="Debt Service" /></span><span className="text-red-400">-${(financialReport.debt / 1000000).toFixed(2)}M</span></div>
+                
+                {/* 4. TOTAL PENALTIES (Expandable) */}
+                {totalPenalties > 0 && (
+                  <>
+                    <div className="flex justify-between text-xs"><span className="text-gray-400"><InfoTip termKey="penalties" label="Penalties & Fines" /></span><span className="text-red-500 font-bold">-${(totalPenalties / 1000000).toFixed(2)}M</span></div>
+                    {isLedgerExpanded && (
+                      <div className="pl-2 border-l-2 border-red-900/50 flex flex-col gap-1 my-1">
+                        {financialReport.voll > 0 && <div className="flex justify-between text-[10px]"><span className="text-red-500/70"><InfoTip termKey="voll" label="Blackout VOLL" /></span><span className="text-red-500">-${(financialReport.voll / 1000000).toFixed(2)}M</span></div>}
+                        {financialReport.curtailment > 0 && <div className="flex justify-between text-[10px]"><span className="text-orange-500/70"><InfoTip termKey="curtailment" label="Curtailment Waste" /></span><span className="text-orange-500">-${(financialReport.curtailment / 1000000).toFixed(2)}M</span></div>}
+                        {financialReport.fines > 0 && <div className="flex justify-between text-[10px]"><span className="text-purple-500/70"><InfoTip termKey="carbonFines" label="Carbon Fines" /></span><span className="text-purple-500">-${(financialReport.fines / 1000000).toFixed(2)}M</span></div>}
+                      </div>
+                    )}
+                  </>
+                )}
 
-                <div className="flex items-center">
-                  {/* APPLIED TOOLTIP */}
-                  <span className="w-16 text-gray-400"><InfoTip termKey="nuclear" label="Nuclear:" /></span>
-                  <div className="flex-1 bg-gray-800 h-3 mx-2 rounded-sm overflow-hidden">
-                    <div className="bg-purple-700 h-full" style={{width: '20%'}}></div>
-                  </div>
-                  <span className="w-10 text-right text-gray-300">$20</span>
-                </div>
-
-                <div className="flex items-center">
-                  {/* APPLIED TOOLTIP */}
-                  <span className="w-16 text-gray-400"><InfoTip termKey="wind" label="Wind:" /></span>
-                  <div className="flex-1 bg-gray-800 h-3 mx-2 rounded-sm overflow-hidden">
-                    <div className="bg-blue-600 h-full" style={{width: '10%'}}></div>
-                  </div>
-                  <span className="w-10 text-right text-gray-300">$10</span>
-                </div>
-
-                <div className="flex items-center">
-                  {/* APPLIED TOOLTIP */}
-                  <span className="w-16 text-gray-400"><InfoTip termKey="solar" label="Solar:" /></span>
-                  <div className="flex-1 bg-gray-800 h-3 mx-2 rounded-sm overflow-hidden">
-                    <div className="bg-yellow-600 h-full" style={{width: '5%'}}></div>
-                  </div>
-                  <span className="w-10 text-right text-gray-300">$5</span>
-                </div>
-
-              </div>
-            </div>
-          </div>
+                {/* BOTTOM LINE */}
+                <div className="flex justify-between text-xs mt-2 pt-2 border-t border-gray-800 font-bold"><span className="text-gray-300"><InfoTip termKey="netCashFlow" label="Net Cash Flow" /></span><span className={cashFlow >= 0 ? 'text-green-400' : 'text-red-400'}>{cashFlow >= 0 ? '+' : '-'}${Math.abs(cashFlow / 1000000).toFixed(2)}M</span></div>
+             </div>
+           </div>
         )}
 
         {activeTab === 'pipeline' && (
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2">
             {constructionQueue.length === 0 ? (
-              <div className="text-gray-600 italic">No active projects.</div>
+              <div className="text-xs text-gray-500 italic text-center mt-4">No active projects</div>
             ) : (
               constructionQueue.map((project, i) => (
-                <div key={i} className="bg-gray-900 p-2 border border-gray-700 flex justify-between items-center">
-                  <span className="text-gray-300 capitalize">{project.capacity}MW {project.type}</span>
-                  <span className="text-yellow-500 font-bold">{project.monthsLeft} mo.</span>
+                <div key={i} className="bg-gray-950 border border-gray-800 p-2 flex justify-between items-center">
+                  <span className="text-xs text-yellow-400 uppercase tracking-widest font-bold">{project.type} ({project.capacity}MW)</span>
+                  <span className="text-xs text-gray-400">{project.monthsLeft} Mo left</span>
                 </div>
               ))
             )}
           </div>
         )}
-
       </div>
     </div>
   );

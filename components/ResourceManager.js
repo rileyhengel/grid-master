@@ -5,9 +5,8 @@ import InfoTip from './InfoTip';
 
 export default function ResourceManager() {
   const { 
-    fleet, buildPlant, decommissionPlant, retailRate, setRetailRate, 
-    creditRating, issueBond, usedLand, totalLand, tutorialStep, previewAction, setPreviewAction,
-    isColorblindMode 
+    fleet, buildPlant, decommissionPlant, usedLand, totalLand, tutorialStep, 
+    previewAction, setPreviewAction, isColorblindMode 
   } = useGrid();
   
   const [isDemolishMode, setIsDemolishMode] = useState(false);
@@ -45,7 +44,6 @@ export default function ResourceManager() {
     storage: { name: 'Storage', icon: Battery, cap: 20, cost: 35, opex: 0, time: 12, rel: 100, clean: 100, type: 'intermittent', ...theme.storage }
   };
 
-  // FIX: Instant hover reactions prevent React from destroying the button mid-click
   const handleMouseEnter = (key, activeCapacity) => {
     setPreviewAction({ type: key, capacity: activeCapacity, action: isDemolishMode ? 'demolish' : 'build' });
   };
@@ -159,38 +157,6 @@ export default function ResourceManager() {
             Demolish
           </button>
         </div>
-      </div>
-
-      <div className="bg-gray-900 p-3 mb-4 border border-gray-700 flex-shrink-0">
-        <label className="text-xs text-gray-400 flex justify-between mb-1">
-          <span><InfoTip termKey="retailRate" label="Retail Rate ($/kWh)" /></span>
-          <span className={retailRate > 0.12 ? "text-red-400" : "text-green-400"}>${retailRate.toFixed(2)}</span>
-        </label>
-        <input 
-          type="range" min="0.10" max="0.25" step="0.01" 
-          value={retailRate} 
-          onChange={(e) => setRetailRate(parseFloat(e.target.value))}
-          className="w-full accent-green-500"
-        />
-      </div>
-
-      <div className="bg-gray-900 p-3 mb-4 border border-gray-700 flex-shrink-0">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs text-gray-400 uppercase tracking-widest"><InfoTip termKey="bond" label="Bond Market" /></span>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded ${creditRating === 'AAA' ? 'bg-green-900 text-green-300' : creditRating === 'JUNK' ? 'bg-red-900 text-red-300' : 'bg-yellow-900 text-yellow-300'}`}>
-            <InfoTip termKey="creditRating" label="RATING:" /> {creditRating}
-          </span>
-        </div>
-        <button 
-          onClick={() => issueBond(100000000, 10)} 
-          className={`w-full text-xs py-2 uppercase tracking-widest transition-all ${
-            tutorialStep === 4 
-              ? 'relative z-[70] bg-purple-800 text-white ring-4 ring-purple-500 ring-offset-2 ring-offset-gray-900 animate-pulse scale-105' 
-              : 'bg-gray-800 border border-gray-600 hover:bg-gray-700 text-white'
-          }`}
-        >
-          Issue $100M Bond (10 Yr)
-        </button>
       </div>
 
       <div className="bg-gray-900 p-3 mb-4 border border-gray-700 flex-shrink-0">

@@ -10,7 +10,7 @@ export const DICTIONARY = {
   
   // 2. The Municipal Economics
   retailRate: "The price citizens pay for electricity. Raising prices gives you cash to build clean energy, but greedy pricing will destroy your public approval.",
-  bond: "A massive city loan. You get millions in cash today to build your grid, but you have to pay crippling interest payments for years.",
+  bond: "A massive city loan. You get millions in cash today to build your grid, but you have to pay interest payments for years.",
   creditRating: "Your financial reputation. If you go broke or cause blackouts, your rating drops to JUNK and loans become impossibly expensive.",
   interconnection: "The long-distance wire fee. If you run out of land in the city, building far away forces you to pay millions extra for transmission lines.",
   nimby: "Local Protests. Citizens want the lights on, but if you build dirty coal or gas in their backyard, your public approval will crash.",

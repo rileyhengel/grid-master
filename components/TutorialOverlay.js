@@ -5,7 +5,6 @@ export default function TutorialOverlay() {
   const { fleet, bonds, constructionQueue, startGame, tutorialStep, setTutorialStep, isPlaying, month, setIsManualOpen } = useGrid();
 
   useEffect(() => {
-    // FIX: Changed from < 400 to < 500 to account for the new starting capacity!
     if (tutorialStep === 3 && fleet.coal < 500) setTutorialStep(4);
     if (tutorialStep === 4 && bonds.length > 0) setTutorialStep(5);
     if (tutorialStep === 5 && constructionQueue.some(p => p.type === 'solar') && constructionQueue.some(p => p.type === 'storage')) setTutorialStep(6);
@@ -47,7 +46,8 @@ export default function TutorialOverlay() {
       )}
 
       {tutorialStep === 4 && (
-        <div className="absolute top-32 right-[24rem] bg-gray-900 border-2 border-purple-500 p-6 max-w-xs shadow-2xl rounded-sm">
+        // FIX: Moved the tooltop to the left side so it points to the new Finances tab!
+        <div className="absolute top-48 left-[22rem] bg-gray-900 border-2 border-purple-500 p-6 max-w-xs shadow-2xl rounded-sm">
           <h3 className="text-purple-400 font-bold tracking-widest mb-2 uppercase text-sm">Step 4: Raising Capital</h3>
           <p className="text-gray-300 text-sm mb-4 leading-relaxed">
             You just lost a chunk of your power supply! We need to build clean energy to replace it, but you lack the cash. <strong>Issue a Municipal Bond</strong> to borrow $100M immediately.
