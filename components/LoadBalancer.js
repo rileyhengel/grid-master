@@ -9,13 +9,27 @@ const DAILY_DEMAND_PROFILE = [
 ];
 
 export default function LoadBalancer() {
-  const { fleet, effectiveDemandMultiplier, weatherModifiers, previewAction, month } = useGrid();
+  const { fleet, effectiveDemandMultiplier, weatherModifiers, previewAction, month, isColorblindMode } = useGrid();
 
   const yAxisMaxRef = useRef(1200);
 
   if (month === 1 && yAxisMaxRef.current > 1200) {
     yAxisMaxRef.current = 1200;
   }
+
+  // NEW: Chart Specific Hex Palette
+  const CHART_COLORS = {
+    standard: {
+      nuclear: '#7e22ce', coal: '#4b5563', ccg: '#0d9488', gas: '#f97316', // BACK TO ORANGE
+      wind: '#60a5fa', solar: '#eab308', storage: '#22c55e', demand: '#ef4444'
+    },
+    colorblind: { // Okabe-Ito mapped to precise hex codes
+      nuclear: '#0072B2', coal: '#71717A', ccg: '#56B4E9', gas: '#D55E00',
+      wind: '#009E73', solar: '#F0E442', storage: '#E69F00', demand: '#CC79A7' // Magenta Demand Line
+    }
+  };
+
+  const colors = isColorblindMode ? CHART_COLORS.colorblind : CHART_COLORS.standard;
 
   const generateData = () => {
     const data = [];
@@ -46,7 +60,6 @@ export default function LoadBalancer() {
     let simulatedCharge = 0;
 
     for (let i = 0; i < 24; i++) {
-      // FIX: Pulls the new elasticity-adjusted multiplier
       let demand = DAILY_DEMAND_PROFILE[i] * (effectiveDemandMultiplier || 1.0);
       
       let windCurve = (0.30 + (0.15 * Math.sin(i * 0.8)) + (0.05 * Math.cos(i * 2))) * weatherModifiers.wind;
@@ -73,7 +86,6 @@ export default function LoadBalancer() {
     let storedEnergyMWh = simulatedCharge; 
     
     for (let i = 0; i < 24; i++) {
-      // FIX: Pulls the new elasticity-adjusted multiplier
       let demand = DAILY_DEMAND_PROFILE[i] * (effectiveDemandMultiplier || 1.0);
       
       let windCurve = (0.30 + (0.15 * Math.sin(i * 0.8)) + (0.05 * Math.cos(i * 2))) * weatherModifiers.wind;
@@ -145,10 +157,10 @@ export default function LoadBalancer() {
       <div className="flex-1 min-h-0 relative">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={generateData()} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#064e3b" />
-            <XAxis dataKey="time" stroke="#10b981" />
+            <CartesianGrid strokeDasharray="3 3" stroke={isColorblindMode ? "#27272a" : "#064e3b"} />
+            <XAxis dataKey="time" stroke={isColorblindMode ? "#a1a1aa" : "#10b981"} />
             <YAxis 
-              stroke="#10b981" 
+              stroke={isColorblindMode ? "#a1a1aa" : "#10b981"}
               domain={[0, dataMax => {
                 const bufferedMax = Math.ceil(dataMax / 100) * 100 + 100;
                 if (bufferedMax > yAxisMaxRef.current) {
@@ -164,15 +176,14 @@ export default function LoadBalancer() {
               formatter={(value, name) => [parseFloat(value).toFixed(1), name]}
             />
             
-            <Area type="monotone" dataKey="Nuclear" stackId="1" stroke="none" fill="#7e22ce" fillOpacity={0.8} />
-            <Area type="monotone" dataKey="Coal" stackId="1" stroke="none" fill="#4b5563" fillOpacity={0.8} />
-            <Area type="monotone" dataKey="CCG" stackId="1" stroke="none" fill="#0d9488" fillOpacity={0.8} />
-            <Area type="monotone" dataKey="Wind" stackId="1" stroke="none" fill="#60a5fa" fillOpacity={0.8} />
-            <Area type="monotone" dataKey="Solar" stackId="1" stroke="none" fill="#eab308" fillOpacity={0.8} />
-            <Area type="monotone" dataKey="Storage" stackId="1" stroke="none" fill="#22c55e" fillOpacity={0.8} />
-            
-            {/* FIX: Gas is now Slate Grey to perfectly contrast with the red demand line */}
-            <Area type="monotone" dataKey="Gas" stackId="1" stroke="none" fill="#64748b" fillOpacity={0.8} />
+            {/* FIX: Dynamic Area Fills */}
+            <Area type="monotone" dataKey="Nuclear" stackId="1" stroke="none" fill={colors.nuclear} fillOpacity={0.8} />
+            <Area type="monotone" dataKey="Coal" stackId="1" stroke="none" fill={colors.coal} fillOpacity={0.8} />
+            <Area type="monotone" dataKey="CCG" stackId="1" stroke="none" fill={colors.ccg} fillOpacity={0.8} />
+            <Area type="monotone" dataKey="Wind" stackId="1" stroke="none" fill={colors.wind} fillOpacity={0.8} />
+            <Area type="monotone" dataKey="Solar" stackId="1" stroke="none" fill={colors.solar} fillOpacity={0.8} />
+            <Area type="monotone" dataKey="Storage" stackId="1" stroke="none" fill={colors.storage} fillOpacity={0.8} />
+            <Area type="monotone" dataKey="Gas" stackId="1" stroke="none" fill={colors.gas} fillOpacity={0.8} />
             
             {previewAction && previewAction.action === 'build' && previewAction.type !== 'gas' && previewAction.type !== 'storage' && (
                <Area 
@@ -188,7 +199,8 @@ export default function LoadBalancer() {
                />
             )}
 
-            <Line type="monotone" dataKey="Demand" stroke="#ef4444" strokeWidth={3} dot={false} isAnimationActive={false} />
+            {/* FIX: Dynamic Demand Line Stroke */}
+            <Line type="monotone" dataKey="Demand" stroke={colors.demand} strokeWidth={3} dot={false} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

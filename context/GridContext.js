@@ -35,11 +35,12 @@ export const GridProvider = ({ children }) => {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [previewAction, setPreviewAction] = useState(null); 
 
-  // NEW: Version 1.1 State Trackers
   const [consecutiveLowApproval, setConsecutiveLowApproval] = useState(0);
   const [consecutiveCarbonFails, setConsecutiveCarbonFails] = useState(0);
 
-  // NEW: Price Elasticity Formula (Demand drops 2.5% for every 10% rate increase over 0.16 baseline)
+  // FIX: The missing state tracker properly initialized
+  const [isColorblindMode, setIsColorblindMode] = useState(false);
+
   const elasticityFactor = retailRate > 0.16 ? Math.max(0.5, 1 - ((retailRate - 0.16) / 0.016) * 0.025) : 1.0;
   const effectiveDemandMultiplier = demandMultiplier * elasticityFactor;
 
@@ -224,7 +225,6 @@ export const GridProvider = ({ children }) => {
     const target = getCarbonTarget(month);
     let carbonFine = 0;
     
-    // NEW: Progressive Geometric Fines
     let nextConsecutiveCarbonFails = consecutiveCarbonFails;
     if (intensity > target && month > 12) {
       nextConsecutiveCarbonFails += 1;
@@ -240,10 +240,9 @@ export const GridProvider = ({ children }) => {
     }
     setConsecutiveCarbonFails(nextConsecutiveCarbonFails);
 
-    // NEW: Affordability with aggressive 10% compounding decay if Rate > 50% baseline
     let nextAffordability = affordabilityIdx;
-    if (retailRate > 0.20) {
-      nextAffordability *= (1-0.10*(retailRate-19)/6); 
+    if (retailRate > 0.24) {
+      nextAffordability *= 0.90; 
       currentLog += "PUBLIC OUTRAGE: Energy prices are crippling the city. Approval plummeting! ";
     } else if (retailRate > lastRetailRate) {
       const rateHike = (retailRate - lastRetailRate) * 100;
@@ -271,11 +270,10 @@ export const GridProvider = ({ children }) => {
     }
     setEnvironmentIdx(nextEnvironment);
 
-    // NEW: "Recall Election" Political Fail State (6 Months under 25%)
     const nextComposite = (nextAffordability * 0.4) + (nextReliability * 0.4) + (nextEnvironment * 0.2);
     let nextConsecutiveLowApproval = consecutiveLowApproval;
     
-    if (nextComposite < 50) {
+    if (nextComposite < 25) {
       nextConsecutiveLowApproval += 1;
       currentLog += `WARNING: Approval critically low (${nextConsecutiveLowApproval}/6 months). Recall imminent! `;
     } else {
@@ -283,7 +281,7 @@ export const GridProvider = ({ children }) => {
     }
     setConsecutiveLowApproval(nextConsecutiveLowApproval);
 
-    if (nextComposite < 40 || nextConsecutiveLowApproval >= 6) {
+    if (nextComposite < 15 || nextConsecutiveLowApproval >= 6) {
       setIsPlaying(false);
       currentLog += "GAME OVER: You have been recalled from office due to sustained public outrage.";
     }
@@ -330,7 +328,6 @@ export const GridProvider = ({ children }) => {
   useEffect(() => {
     if (gameStatus === 'start_screen' || gameStatus === 'tutorial' || gameStatus === 'ended') return;
 
-    // FIX: Telemetry watcher now triggers if the 6-month Recall condition is met
     if (month > 360 || cash < 0 || compositeApproval < 15 || consecutiveLowApproval >= 6) {
       setIsPlaying(false);
       setGameStatus('ended');
@@ -461,7 +458,9 @@ export const GridProvider = ({ children }) => {
       gameStatus, startGame, startTutorial, blackoutCount, 
       tutorialStep, setTutorialStep, weatherModifiers,
       isManualOpen, setIsManualOpen, previewAction, setPreviewAction,
-      effectiveDemandMultiplier, consecutiveLowApproval // Exposed for the UI files
+      effectiveDemandMultiplier, consecutiveLowApproval,
+      // FIX: Ensure the state is perfectly exposed down the tree
+      isColorblindMode, setIsColorblindMode 
     }}>
       {children}
     </GridContext.Provider>

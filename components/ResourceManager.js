@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useGrid } from '../context/GridContext';
 import { Factory, Flame, Zap, Wind, Sun, Battery, Activity } from 'lucide-react';
 import InfoTip from './InfoTip'; 
@@ -6,30 +6,51 @@ import InfoTip from './InfoTip';
 export default function ResourceManager() {
   const { 
     fleet, buildPlant, decommissionPlant, retailRate, setRetailRate, 
-    creditRating, issueBond, usedLand, totalLand, tutorialStep, previewAction, setPreviewAction 
+    creditRating, issueBond, usedLand, totalLand, tutorialStep, previewAction, setPreviewAction,
+    isColorblindMode 
   } = useGrid();
   
   const [isDemolishMode, setIsDemolishMode] = useState(false);
-  const hoverTimeout = useRef(null);
 
-  const ASSETS = {
-    nuclear: { name: 'Nuclear', icon: Zap, color: 'text-purple-500', bg: 'border-purple-700', hoverBg: 'hover:bg-purple-900', cap: 100, cost: 785, opex: 10, time: 120, rel: 100, clean: 100, type: 'baseload' },
-    coal: { name: 'Coal', icon: Factory, color: 'text-gray-400', bg: 'border-gray-600', hoverBg: 'hover:bg-gray-700', cap: 100, cost: 150, opex: 85, time: 24, rel: 95, clean: 0, type: 'baseload' },
-    ccg: { name: 'CCG Plant', icon: Activity, color: 'text-teal-400', bg: 'border-teal-700', hoverBg: 'hover:bg-teal-900', cap: 100, cost: 120, opex: 40, time: 48, rel: 95, clean: 50, type: 'baseload' },
-    gas: { name: 'Gas Peaker', icon: Flame, color: 'text-slate-400', bg: 'border-slate-500', hoverBg: 'hover:bg-slate-800', cap: 50, cost: 70, opex: 110, time: 36, rel: 99, clean: 40, type: 'baseload' },
-    wind: { name: 'Wind', icon: Wind, color: 'text-blue-400', bg: 'border-blue-700', hoverBg: 'hover:bg-blue-900', cap: 50, cost: 75, opex: 0, time: 24, rel: 30, clean: 100, type: 'intermittent' },
-    solar: { name: 'Solar', icon: Sun, color: 'text-yellow-500', bg: 'border-yellow-700', hoverBg: 'hover:bg-yellow-900', cap: 50, cost: 75, opex: 0, time: 12, rel: 25, clean: 100, type: 'intermittent' },
-    storage: { name: 'Storage', icon: Battery, color: 'text-green-400', bg: 'border-green-500', hoverBg: 'hover:bg-green-900', cap: 20, cost: 35, opex: 0, time: 12, rel: 100, clean: 100, type: 'intermittent' }
+  const PALETTE = {
+    standard: {
+      nuclear: { color: 'text-purple-500', bg: 'border-purple-700', hoverBg: 'hover:bg-purple-900' },
+      coal: { color: 'text-gray-400', bg: 'border-gray-600', hoverBg: 'hover:bg-gray-700' },
+      ccg: { color: 'text-teal-400', bg: 'border-teal-700', hoverBg: 'hover:bg-teal-900' },
+      gas: { color: 'text-orange-500', bg: 'border-orange-700', hoverBg: 'hover:bg-orange-900' }, 
+      wind: { color: 'text-blue-400', bg: 'border-blue-700', hoverBg: 'hover:bg-blue-900' },
+      solar: { color: 'text-yellow-500', bg: 'border-yellow-700', hoverBg: 'hover:bg-yellow-900' },
+      storage: { color: 'text-green-400', bg: 'border-green-500', hoverBg: 'hover:bg-green-900' }
+    },
+    colorblind: { 
+      nuclear: { color: 'text-indigo-400', bg: 'border-indigo-600', hoverBg: 'hover:bg-indigo-800' },
+      coal: { color: 'text-zinc-400', bg: 'border-zinc-600', hoverBg: 'hover:bg-zinc-800' },
+      ccg: { color: 'text-sky-300', bg: 'border-sky-500', hoverBg: 'hover:bg-sky-700' },
+      gas: { color: 'text-rose-500', bg: 'border-rose-700', hoverBg: 'hover:bg-rose-900' },
+      wind: { color: 'text-emerald-400', bg: 'border-emerald-600', hoverBg: 'hover:bg-emerald-800' },
+      solar: { color: 'text-yellow-300', bg: 'border-yellow-500', hoverBg: 'hover:bg-yellow-700' },
+      storage: { color: 'text-amber-500', bg: 'border-amber-700', hoverBg: 'hover:bg-amber-900' }
+    }
   };
 
+  const theme = isColorblindMode ? PALETTE.colorblind : PALETTE.standard;
+
+  const ASSETS = {
+    nuclear: { name: 'Nuclear', icon: Zap, cap: 100, cost: 785, opex: 10, time: 120, rel: 100, clean: 100, type: 'baseload', ...theme.nuclear },
+    coal: { name: 'Coal', icon: Factory, cap: 100, cost: 150, opex: 85, time: 24, rel: 95, clean: 0, type: 'baseload', ...theme.coal },
+    ccg: { name: 'CCG Plant', icon: Activity, cap: 100, cost: 120, opex: 40, time: 48, rel: 95, clean: 50, type: 'baseload', ...theme.ccg },
+    gas: { name: 'Gas Peaker', icon: Flame, cap: 50, cost: 70, opex: 110, time: 36, rel: 99, clean: 40, type: 'baseload', ...theme.gas },
+    wind: { name: 'Wind', icon: Wind, cap: 50, cost: 75, opex: 0, time: 24, rel: 30, clean: 100, type: 'intermittent', ...theme.wind },
+    solar: { name: 'Solar', icon: Sun, cap: 50, cost: 75, opex: 0, time: 12, rel: 25, clean: 100, type: 'intermittent', ...theme.solar },
+    storage: { name: 'Storage', icon: Battery, cap: 20, cost: 35, opex: 0, time: 12, rel: 100, clean: 100, type: 'intermittent', ...theme.storage }
+  };
+
+  // FIX: Instant hover reactions prevent React from destroying the button mid-click
   const handleMouseEnter = (key, activeCapacity) => {
-    hoverTimeout.current = setTimeout(() => {
-      setPreviewAction({ type: key, capacity: activeCapacity, action: isDemolishMode ? 'demolish' : 'build' });
-    }, 300); 
+    setPreviewAction({ type: key, capacity: activeCapacity, action: isDemolishMode ? 'demolish' : 'build' });
   };
 
   const handleMouseLeave = () => {
-    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     setPreviewAction(null);
   };
 
@@ -120,11 +141,9 @@ export default function ResourceManager() {
       <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-2 flex-shrink-0">
         <h2 className="text-green-500 uppercase tracking-widest">Asset Fleet</h2>
         
-        {/* FIX: Removed overflow-hidden so the spotlights can escape the container */}
         <div className="flex bg-gray-950 border border-gray-700 rounded-sm">
           <button 
             onClick={() => { setIsDemolishMode(false); setPreviewAction(null); }}
-            // FIX: Added rounded-l-sm and fixed the heavy ring-4 styling
             className={`px-3 py-1 text-[10px] tracking-widest uppercase rounded-l-sm transition-all ${
               !isDemolishMode ? 'bg-green-900/50 text-green-400 font-bold' : 'text-gray-500 hover:bg-gray-800'
             } ${tutorialStep === 5 && isDemolishMode ? 'relative z-[70] ring-4 ring-yellow-500 ring-offset-2 ring-offset-gray-900 animate-pulse bg-gray-800 text-white' : ''}`}
@@ -133,7 +152,6 @@ export default function ResourceManager() {
           </button>
           <button 
             onClick={() => { setIsDemolishMode(true); setPreviewAction(null); }}
-            // FIX: Added rounded-r-sm and fixed the heavy ring-4 styling
             className={`px-3 py-1 text-[10px] tracking-widest uppercase rounded-r-sm transition-all ${
               isDemolishMode ? 'bg-red-900/50 text-red-400 font-bold' : 'text-gray-500 hover:bg-gray-800'
             } ${tutorialStep === 3 && !isDemolishMode ? 'relative z-[70] ring-4 ring-orange-500 ring-offset-2 ring-offset-gray-900 animate-pulse bg-gray-800 text-white' : ''}`}

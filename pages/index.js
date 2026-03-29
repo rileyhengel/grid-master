@@ -14,7 +14,8 @@ export default function Dashboard() {
     isPlaying, playSpeed, togglePlay, cycleSpeed, getCarbonTarget,
     compositeApproval, affordabilityIdx, reliabilityIdx, environmentIdx, 
     effectiveDemandMultiplier, gameStatus, tutorialStep, retailRate, creditRating,
-    blackoutCount, fleet, isManualOpen, setIsManualOpen, consecutiveLowApproval
+    blackoutCount, fleet, isManualOpen, setIsManualOpen, consecutiveLowApproval,
+    isColorblindMode, setIsColorblindMode
   } = useGrid();
 
   const finalTarget = getCarbonTarget(360); 
@@ -29,7 +30,6 @@ export default function Dashboard() {
     );
   }
   
-  // FIX: Updated to catch the new 6-month Recall Election rules
   if (compositeApproval < 15 || consecutiveLowApproval >= 6) {
     return (
       <div className="bg-gray-950 min-h-screen text-red-500 flex flex-col items-center justify-center font-mono p-10 text-center">
@@ -108,34 +108,50 @@ export default function Dashboard() {
       <OperationsManual isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
 
       {gameStatus !== 'start_screen' && (
-        <div className="flex justify-between items-center bg-gray-900 border border-blue-900/50 p-2 px-4 rounded mb-4 text-xs font-bold text-blue-200 shadow-lg" title="If you fail any of these, you lose the game!">
+        <div className="flex justify-between items-center bg-gray-900 border border-blue-900/50 p-2 px-4 rounded mb-4 text-xs font-bold text-blue-200 shadow-lg flex-shrink-0">
           <span className="text-blue-400 uppercase tracking-widest mr-4">Mission Objectives:</span>
-          <div className="flex gap-6">
-             <span className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-4 md:gap-6">
+             <span className="flex items-center gap-2 whitespace-nowrap">
                ⏱ Survive to M: 360
              </span>
-             <span className={`flex items-center gap-2 ${currentIntensity <= finalTarget ? 'text-green-400' : ''}`}>
+             <span className={`flex items-center gap-2 whitespace-nowrap ${currentIntensity <= finalTarget ? 'text-green-400' : ''}`}>
                🌍 Reach 0.00 Carbon Target
              </span>
-             <span className={`flex items-center gap-2 ${blackoutCount > 12 ? 'text-red-500' : ''}`}>
+             <span className={`flex items-center gap-2 whitespace-nowrap ${blackoutCount > 12 ? 'text-red-500' : ''}`}>
                ⚡ Blackouts: {blackoutCount} / 12 MAX
              </span>
           </div>
         </div>
       )}
 
-      <header className="flex justify-between items-center pb-6 border-b border-gray-800 mb-6 flex-shrink-0">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tighter text-green-400 flex items-center gap-4">
-            GRID MASTER // TERMINAL
-            <button 
-              onClick={() => setIsManualOpen(true)}
-              className="text-[10px] bg-blue-900/30 text-blue-400 border border-blue-800 hover:bg-blue-800 hover:text-white px-2 py-1 rounded-sm tracking-widest transition-colors uppercase cursor-pointer"
-            >
-              [?] Operations Manual
-            </button>
-          </h1>
-          <div className="flex gap-4 text-xs mt-1 text-gray-400">
+      <header className="flex flex-col xl:flex-row justify-between items-start xl:items-end pb-6 border-b border-gray-800 mb-6 flex-shrink-0 gap-4">
+        
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <h1 className="text-3xl font-bold tracking-tighter text-green-400 m-0 leading-none">
+              GRID MASTER // TERMINAL
+            </h1>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setIsManualOpen(true)}
+                className="text-[10px] bg-blue-900/30 text-blue-400 border border-blue-800 hover:bg-blue-800 hover:text-white px-2 py-1 rounded-sm tracking-widest transition-colors uppercase cursor-pointer"
+              >
+                [?] Operations Manual
+              </button>
+              <button 
+                onClick={() => setIsColorblindMode(!isColorblindMode)}
+                className={`text-[10px] px-2 py-1 rounded-sm tracking-widest transition-colors uppercase cursor-pointer border ${
+                  isColorblindMode 
+                    ? 'bg-amber-900/30 text-amber-400 border-amber-800 hover:bg-amber-800 hover:text-white' 
+                    : 'bg-gray-800/30 text-gray-400 border-gray-700 hover:bg-gray-700 hover:text-white'
+                }`}
+              >
+                [👁] CB Mode: {isColorblindMode ? 'ON' : 'OFF'}
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-4 text-xs text-gray-400">
              <span className={currentIntensity <= baselineIntensity ? "text-green-500" : "text-orange-500"}>
                <InfoTip termKey="carbonIntensity" label="CARBON EMISSIONS:" /> {currentIntensity.toFixed(2)} Tons/MWh
              </span>
@@ -145,23 +161,39 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <div className="flex gap-4 text-xs items-center">
-            <span>MONTH: {month}/360 (YR {Math.ceil(month/12)})</span>
-            <span className={cash < 0 ? "text-red-500 font-bold" : ""}>FUNDS: ${(cash / 1000000).toFixed(1)}M</span>
+        <div className="flex flex-wrap gap-4 text-xs items-center bg-gray-900 p-3 rounded-sm border border-gray-800 shadow-md">
+            <span className="whitespace-nowrap">MONTH: {month}/360 (YR {Math.ceil(month/12)})</span>
+            <span className={`whitespace-nowrap ${cash < 0 ? "text-red-500 font-bold" : ""}`}>FUNDS: ${(cash / 1000000).toFixed(1)}M</span>
             
-            <span className="text-blue-400 flex items-center">
-              {/* FIX: Displays the visually reduced demand to the player */}
+            <span className="text-blue-400 flex items-center whitespace-nowrap">
               <InfoTip termKey="peakDemand" label="DEMAND:" /> &nbsp;{(effectiveDemandMultiplier * 100).toFixed(0)}%
             </span>
             
-            <div className="flex gap-3 border-l border-gray-600 pl-4 ml-2 items-center">
-              <span className={compositeApproval < 30 ? "text-red-500 font-bold" : "text-green-400 font-bold"}>
+            {/* FIX: The new interactive Hover Tooltip for Approval */}
+            <div className="relative flex gap-3 border-l border-gray-700 pl-4 ml-2 items-center whitespace-nowrap group cursor-help">
+              <span className={compositeApproval < 30 ? "text-red-500 font-bold border-b border-dashed border-red-500" : "text-green-400 font-bold border-b border-dashed border-green-400"}>
                 APPROVAL: {compositeApproval?.toFixed(1) || 100}%
               </span>
-              <span className="text-gray-500 text-[10px] tracking-widest hidden md:inline">
-                (AFF: {affordabilityIdx?.toFixed(0) || 100}% | REL: {reliabilityIdx?.toFixed(0) || 100}% | ENV: {environmentIdx?.toFixed(0) || 100}%)
-              </span>
+              
+              <div className="absolute top-full right-0 mt-3 bg-gray-950 border border-gray-700 p-3 rounded shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[100] min-w-max">
+                <div className="flex flex-col gap-2 text-[10px] tracking-widest uppercase">
+                  <div className="text-gray-500 border-b border-gray-800 pb-1 mb-1">Tripartite Index</div>
+                  <div className="flex justify-between gap-8 text-gray-400">
+                    <span>Affordability:</span> 
+                    <span className={affordabilityIdx < 30 ? 'text-red-400 font-bold' : 'text-white'}>{affordabilityIdx?.toFixed(0)}%</span>
+                  </div>
+                  <div className="flex justify-between gap-8 text-gray-400">
+                    <span>Reliability:</span> 
+                    <span className={reliabilityIdx < 30 ? 'text-red-400 font-bold' : 'text-white'}>{reliabilityIdx?.toFixed(0)}%</span>
+                  </div>
+                  <div className="flex justify-between gap-8 text-gray-400">
+                    <span>Environment:</span> 
+                    <span className={environmentIdx < 30 ? 'text-red-400 font-bold' : 'text-white'}>{environmentIdx?.toFixed(0)}%</span>
+                  </div>
+                </div>
+              </div>
             </div>
+
         </div>
       </header>
 
